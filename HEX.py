@@ -38,12 +38,13 @@ class HEX_Cell():
         if(self.edge != 0):
             return True
         return False
+
     def __str__(self): # (edge, state)
         string = "({} {})".format(self.x, self.y)
         return string # Return this cells representation as string.
     
-    def __repr__(self):
-        string = "{}({},{})".format(self.edge, self.x, self.y)
+    def __repr__(self): # 
+        string = "({})".format(self.state)
         return string # Return this cells representation as string.
 
     def search_path(self, current_player):
@@ -55,7 +56,6 @@ class HEX_Cell():
         if(self.state == current_player and self.is_edge()): # If we are at an end step, we can stop search.
             return True
         
-
         #continue searching children.
         set_neighbours = False
         for neighbour in self.neighbours:
@@ -73,8 +73,8 @@ class HEX_State(State):
             self.board = board
         else:
             self.board = self.createBoard(dim) # dim
-            self.init_neighbours()
-            # We need to set every neighbour
+            self.legal_states = np.ones((dim,dim)) # Simple array, to keep track of legal moves we can make from a given board. 
+            self.init_neighbours() # connect neighbouring cells. To easily search for complete path later.
 
     def createBoard(self, dim):
         """ Create the board, with dimentions specified along with a HEX_Cell as each element. """
@@ -99,6 +99,7 @@ class HEX_State(State):
                     cell = HEX_Cell(x,y,edge=1)
                 else: # not edge cell.
                     cell = HEX_Cell(x,y,edge=0)
+
                 if(cell is not None):
                     row.append(cell)
                 else: # Catch error.
@@ -124,13 +125,17 @@ class HEX_State(State):
                 for index in index_neighbours:
                         cell.neighbours.append(self.board[index[0]][index[1]])
 
-    def change_state(self, action): 
+    def change_state(self, move): 
         """ Change state of board with an action to state."""# change the index, based on which made the move, assumes this is a legal action.
         #action is a touple or list (x,y)
-        if((self.board[action[0],action[1]]).state == 0):
-            self.board[action[0]][action[1]] = self.player_turn # Set state to current player.
+        x = move[0]; y = move[1]
+        if((self.board[x][y]).state == 0): # If the sate is not occipied
+            self.board[x][y].state = self.player_turn # Set state of cell to current player.
+            self.legal_states[x][x] = 0 # We need to update legal states aswell.
+            #TODO: Check if we won the game before we switch turns.
+            self.switch_turn() # We are no longer in play.
         else:
-            raise ValueError("Illegal action taken trying to puth piece in field ({},{})".format(action[0],action[1]))
+            raise ValueError("Illegal action taken trying to puth piece in field ({},{})".format(x,y))
 
     def check_state(self): # Check a game state, to vertify wether or not current_player made a winning move.
         #player 1 is playing Black pieces, whilst player 2 is playing Red pieces.
@@ -149,12 +154,20 @@ class HEX_State(State):
         
         #TODO: search the network, from the edge cells, exit state sh
 
-
-
-    def get_actions(self):
+    def get_legal_actions(self):
         #return list of all board states that have not been visited yet.
         #return states that have not been visited yet.
-        pass
+        #return self.legal_states # Should be as an 1d list too, but with index instead of 1/0 values
+        legal_states = []
+        for row in self.board:
+            for state in row:
+                if(state.state == 0):
+                    legal_states.append((state.x,state.y))
+        return legal_states
+    
+    def get_legal_actions_1d(self):
+        #Return legal actions as a 1d list
+        return self.legal_states.ravel()
 
     def is_game_over(self): 
         if(self.winner is not None):
@@ -175,14 +188,19 @@ class HEX_State(State):
             self.player_turn = 1
 
     def switch_turns_random(self):
+        """Testing """
         self.player_turn = random.choice([1,2]) # randomly choice between which player starts 
 
-    def __str__(self): # 
+    def __str__(self): # bla
         data = {"Player_turn": self.player_turn,
         "winner":self.winner}
         return data.__str__()
 
-#hex_state = HEX_State(dim=[4,4])
+    def state_occupied(self, action):
+        cell_state = self.board[action[0]][action[1]].state
+        if(cell_state != 0): # 0 is clear state.
+            return True
+        return False
 
 # Player 1 is Red, player 2 is Blue.
 class HEX(Game):
@@ -192,19 +210,19 @@ class HEX(Game):
 
 
     def play_state(self, action): # Move, should be an index of where to put an block on the board. Assumes the index is empty state.
-        if(not self.state_empty(action)):
-            raise ValueError("Passed move {}, is not an acceptable action ".format(action))
         # Then we change the state
         # copy game state
         state_copy = copy.deepcopy(self.state)
         state_copy.change_state(action) # apply changes to state
         
         #Check if current player won based on this.
+
+    def play(self, action):
+        # We can make a change on the state.
+        self.state.change_state(action)
     
     def check_state(self):
         # One simple elimination test, is to check wheter or not there is one used block along the edges.
-        
-
         pass
 
 
@@ -220,8 +238,42 @@ class HEX(Game):
 
 
 
-hex = HEX(5)
-print(hex.state)
+
+def hex_state_test():
+    hex = HEX(5)
+
+    #Change the game state.
+    legal_actions = hex.state.get_legal_actions()
+    print(len(legal_actions))
+    state = hex.state.board
+    for row in state:
+        print(row)
+    hex.play((0,0))
+    hex.play((3,3))
+    hex.play((0,1))
+    hex.play((0,2))
+    hex.play((1,1))
+    hex.play((1,2))
+    hex.play((2,1))
+    hex.play((2,3))
+    hex.play((3,1))
+    hex.play((4,1))
+    hex.play((4,0))
+    hex.play((1,3))
+    hex.play((3,2))
+    hex.play((0,3))
+    hex.play((4,2))
+    hex.play((0,4))
+    hex.play((4,3))
+    hex.play((1,4))
+    hex.play((4,4))
+    print("New state")
+    for row in state:
+        print(row)
+
+    #Create a complete game.
+
+hex_state_test()
 
 def state_test():
 
@@ -242,8 +294,6 @@ def state_test():
     state_3[0][1] = 1
     state_3[2][2] = 1
     state_3[3][3] = 1
-    
-    print(state_1)
 
     player_turn = 1 # It is player 1 turn to move
     #Want to check if player 1 won the game of hex or not.
