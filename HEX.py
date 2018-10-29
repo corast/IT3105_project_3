@@ -3,12 +3,67 @@ from base.Game import Game
 import copy
 import numpy as np
 import numpy.random as random
+
+    # We need to store the whole board as an array. Example dim = 5
+    #   (x,y) (rows, cols)
+    #                    R
+    #        y     y     y     y     y
+    #    x (0,0) (0,1) (0,2) (0,3) (0,4) x
+    #    x (1,0) (1,1) (1,2) (1,3) (1,4) x
+    # B  x (2,0) (2,1) (2,2) (2,3) (2,4) x  B
+    #    x (3,0) (3,1) (3,2) (3,3) (3,4) x
+    #    x (4,0) (4,1) (4,2) (4,3) (4,4) x
+    #        y     y     y     y     y
+    #                    R
+    # each index contains a cell, each cell, is either a goal state for a player, or a regular cell
+    # Cells that contain a player is filled with 1 for player 1, or 2 for player 2, as an integer
+    # Cells that contain 0 is empty, and in play
+    # Black player (1) is trying to connect y = 0, to y = dim
+    # Red player (2) is trying to connet x = 0, to x = dim
+
 class HEX_Cell():
-    def __init__(self):
-        self.state = 0 # Tells wheter or not we have been visited before.
-        self.x_index = 0 # Keep track of our index
-        self.y_index = 0 # Keep track of our index
+    NONE = 0 # 0
+    BLACK = 1 # 1
+    RED = 2 # 10
+    BOTH = 3 # 11
+    def __init__(self,x, y, edge = 0):
+        self.state = 0 # Tells wheter or not we have been visited before, and by which player.
+        self.edge = edge # Keep track of whether or not we are an edge cell, and which one.
+        self.x = x # Keep track of our index
+        self.y = y # Keep track of our index
         self.neighbours = [] # List containing every neighbour of an cell. [(r,c-1), (r+1,y-1), (r+1,c);(r-1,c), (r-1,c+1), (r,c+1)]
+
+    def is_edge(self):
+        """Check if cell is an edge state. """
+        if(self.edge != 0):
+            return True
+        return False
+    def __str__(self): # (edge, state)
+        string = "({} {})".format(self.x, self.y)
+        return string # Return this cells representation as string.
+    
+    def __repr__(self):
+        string = "{}({},{})".format(self.edge, self.x, self.y)
+        return string # Return this cells representation as string.
+
+    def search_path(self, current_player):
+        pass
+
+        #TODO: FIX infinite loop conditions.
+    def search(self, current_player): #We allways start from left to right, or top to bottom with searching.
+        #We need to check if we have a neighbour that we can visit atleast.
+        if(self.state == current_player and self.is_edge()): # If we are at an end step, we can stop search.
+            return True
+        
+
+        #continue searching children.
+        set_neighbours = False
+        for neighbour in self.neighbours:
+            if(neighbour.state == current_player): # If state is set to current player
+                set_neighbours = True
+                neighbour.search(current_player)
+        if(not set_neighbours):
+            return False # We cant search more from here, or we fail.
 
 class HEX_State(State):
     def __init__(self, dim, player_turn=1,board=None, winner = None): # Keep track of state of game
@@ -18,47 +73,83 @@ class HEX_State(State):
             self.board = board
         else:
             self.board = self.createBoard(dim) # dim
+            self.init_neighbours()
+            # We need to set every neighbour
 
     def createBoard(self, dim):
+        """ Create the board, with dimentions specified along with a HEX_Cell as each element. """
         #dim can be a touple,list or an int.
-        print(type(dim), dim)
-        if (type(dim) == tuple or type(dim) == list):
-            #we have a touple or list.
+        if (type(dim) == tuple or type(dim) == list): #we have a touple or list.
             dimx = dim[0]
             dimy = dim[1]
         else:
             dimx = dim
             dimy = dim
-        #We need to store the whole board as an array. Example dim = 4
-        #   (x,y) (rows, cols)
-        #     y     y     y     y
-        # x (0,0) (1,0) (2,0) (3,0) x
-        # x (0,1) (1,1) (2,1) (3,1) x
-        # x (0,2) (1,2) (2,2) (3,2) x
-        # x (0,3) (1,3) (2,3) (3,3) x
-        #     y     y     y     y
-        # each index contains a cell, each cell, is either a goal state for a player, or a regular cell
-        # Cells that contain a player is filled with 1 for player 1, or 2 for player 2, as an integer
-        # Cells that contain 0 is 
-        board = np.zeros((dimx, dimy))
-        print(board)
+        board = []
+        # state board
         for x in range(dimx):
-            for y in range(dimy):
-                print("({},{})".format(x,y), end="")
-            print()
+            row = [] # Row matrix.
+            for y in range(dimy): # Create a cell, and put into the array.
+                cell = None
+                if(x == 0 and y == 0) or (x == dimx-1 and y == 0) or (x == 0 and y == dimy-1) or (x == dimx-1 and y == dimy-1):
+                    cell = HEX_Cell(x,y,edge=3)
+                elif(x == 0) or (x == dimx-1): # Edge states for Red
+                    cell = HEX_Cell(x,y,edge=2)
+                elif(y == 0) or (y == dimy-1):
+                    cell = HEX_Cell(x,y,edge=1)
+                else: # not edge cell.
+                    cell = HEX_Cell(x,y,edge=0)
+                if(cell is not None):
+                    row.append(cell)
+                else: # Catch error.
+                    raise ValueError("A cell was not created for an index")
+            board.append(row)
         return board
+    
+    def init_neighbours(self):
+        """ Connects every cell to its neighbours. """
+        dimx = len(self.board)
+        dimy = len(self.board[0])
+        for r,row in enumerate(self.board):
+            for c,cell in enumerate(row):
+                # We need to figure out what neighbours we should take from the board, based on this.
+                # Each have 6 neighbours at most.
+                # Create list of index, of potential neighbours.
+                index_neighbours = [(r-1,c),(r-1,c+1),(r,c+1), (r,c-1),(r+1,c-1),(r+1,c)]
+                if(cell.is_edge()):
+                    #We need to remove indexes that are too large.
+                    #Remove elements from touple which are smaller than 0 or greated than dimentions.
+                    index_neighbours = [index for index in index_neighbours if ( 0 <= index[0] < dimx) and (0 <= index[1] < dimy)]
+                # If the values are negative or greater than the dimention
+                for index in index_neighbours:
+                        cell.neighbours.append(self.board[index[0]][index[1]])
 
-    def change_state(self, action): # change the index, based on which made the move.
-        self.board[action[0]][action[1]] = self.player_turn # Set state to current player.
+    def change_state(self, action): 
+        """ Change state of board with an action to state."""# change the index, based on which made the move, assumes this is a legal action.
+        #action is a touple or list (x,y)
+        if((self.board[action[0],action[1]]).state == 0):
+            self.board[action[0]][action[1]] = self.player_turn # Set state to current player.
+        else:
+            raise ValueError("Illegal action taken trying to puth piece in field ({},{})".format(action[0],action[1]))
 
     def check_state(self): # Check a game state, to vertify wether or not current_player made a winning move.
-        # First test, check if current player has one piece on every row(player 1) or column(player 2), impossible to win without this.
-        for row in self.board: # Check every row firstly
-            for element in row:
-                if(element == self.player_turn):
-                    pass
-            return 0 # Return 0, implying we didnt win    
-        self.board
+        #player 1 is playing Black pieces, whilst player 2 is playing Red pieces.
+        if(self.player_turn == 1): # We want to check first column
+            rows_of_interest = self.board[:,0] 
+        else: # We need to check first row
+            rows_of_interest = self.board[0]
+        edge_cells = []
+        present = False
+        for cell in rows_of_interest:
+            if(self.player_turn == cell.state): # simply check if we have a cell with state of player turn along edges.
+                present = True
+                edge_cells.append(cell) # Add edge cell.
+        if(not present):
+            return 0
+        
+        #TODO: search the network, from the edge cells, exit state sh
+
+
 
     def get_actions(self):
         #return list of all board states that have not been visited yet.
@@ -84,7 +175,7 @@ class HEX_State(State):
             self.player_turn = 1
 
     def switch_turns_random(self):
-        self.player_turn = random.random.choice([1,2]) # randomly choice between which player starts 
+        self.player_turn = random.choice([1,2]) # randomly choice between which player starts 
 
     def __str__(self): # 
         data = {"Player_turn": self.player_turn,
@@ -107,10 +198,13 @@ class HEX(Game):
         # copy game state
         state_copy = copy.deepcopy(self.state)
         state_copy.change_state(action) # apply changes to state
-
+        
         #Check if current player won based on this.
     
     def check_state(self):
+        # One simple elimination test, is to check wheter or not there is one used block along the edges.
+        
+
         pass
 
 
@@ -126,7 +220,8 @@ class HEX(Game):
 
 
 
-#hex = HEX(4)
+hex = HEX(5)
+print(hex.state)
 
 def state_test():
 
@@ -177,7 +272,7 @@ def state_test():
 def check_paths(state ,x,y): # state is an array of next board state.
     # We simpy
 
-
+    pass
     #print(state_2)
 
-state_test()
+#state_test()

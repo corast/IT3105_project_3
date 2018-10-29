@@ -1,5 +1,5 @@
 # Controller 
-from GameSimulator import * 
+#from GameSimulator import *  # Not used..
 from NIM import *
 import argparse
 import variables
