@@ -3,6 +3,8 @@ from base.Game import Game
 import copy
 import numpy as np
 import numpy.random as random
+# TODO: add cell state which track if connected to an edge or not, e.g connected_left, connected_right when it is set.
+# TODO: cont, when we select a new piece, we can check whether neighbours are left and right (top, bottom connected) meaning terminal state is reached.
 
     # We need to store the whole board as an array. Example dim = 5
     #   (x,y) (rows, cols)
