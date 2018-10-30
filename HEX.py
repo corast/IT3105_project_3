@@ -8,15 +8,15 @@ import numpy.random as random
 
     # We need to store the whole board as an array. Example dim = 5
     #   (x,y) (rows, cols)
-    #                    R
-    #        y     y     y     y     y
-    #    x (0,0) (0,1) (0,2) (0,3) (0,4) x
-    #    x (1,0) (1,1) (1,2) (1,3) (1,4) x
-    # B  x (2,0) (2,1) (2,2) (2,3) (2,4) x  B
-    #    x (3,0) (3,1) (3,2) (3,3) (3,4) x
-    #    x (4,0) (4,1) (4,2) (4,3) (4,4) x
-    #        y     y     y     y     y
-    #                    R
+    #                      R (3)
+    #            y     y     y     y     y
+    #       x (0,0) (0,1) (0,2) (0,3) (0,4) x
+    #       x (1,0) (1,1) (1,2) (1,3) (1,4) x
+    # B (1) x (2,0) (2,1) (2,2) (2,3) (2,4) x 2 (B)
+    #       x (3,0) (3,1) (3,2) (3,3) (3,4) x
+    #       x (4,0) (4,1) (4,2) (4,3) (4,4) x
+    #           y     y     y     y     y
+    #                      R (4)
     # each index contains a cell, each cell, is either a goal state for a player, or a regular cell
     # Cells that contain a player is filled with 1 for player 1, or 2 for player 2, as an integer
     # Cells that contain 0 is empty, and in play
@@ -24,30 +24,84 @@ import numpy.random as random
     # Red player (2) is trying to connet x = 0, to x = dim
 
 class HEX_Cell():
-    NONE = 0 # 0
-    BLACK = 1 # 1
-    RED = 2 # 10
-    BOTH = 3 # 11
-    def __init__(self,x, y, edge = 0):
+    NONE = [False, False, False, False] # We are not an edge node.
+    BLACK_R = [False,False,False,True] # 
+    BLACK_L = [True,False,False,False] #
+    RED_T = [False,True,False,False] # 
+    RED_B = [False,False,True,False] # 
+    # It is impossible to be right and left or top and bottom at the same time.
+    # But it is possible to be left/right and top/bot at same time.
+    #BOTH = [0,0,0,0] # 
+    def __init__(self,x, y, edge = 0, edge_v = NONE):
         self.state = 0 # Tells wheter or not we have been visited before, and by which player.
-        self.edge = edge # Keep track of whether or not we are an edge cell, and which one.
+        #self.edge = edge # Keep track of whether or not we are an edge cell, and which one.
+        self.edge_v = edge_v # Keep track of specific edge we are.
         self.x = x # Keep track of our index
         self.y = y # Keep track of our index
+        # We need to keep track of, if we are able to connect to an edge.
+        self.connected = [False, False, False, False] # 0 means we don't connect to anything, 1 is left, 2 is top, 3 is right, 4 is down
         self.neighbours = [] # List containing every neighbour of an cell. [(r,c-1), (r+1,y-1), (r+1,c);(r-1,c), (r-1,c+1), (r,c+1)]
 
     def is_edge(self):
-        """Check if cell is an edge state. """
-        if(self.edge != 0):
-            return True
-        return False
+        """Check if cell is an edge state. """ 
+
+        if(self.edge_v.__eq__(HEX_Cell.NONE)):
+            print(self.edge_v)
+            return False
+        return True
 
     def __str__(self): # (edge, state)
         string = "({} {})".format(self.x, self.y)
         return string # Return this cells representation as string.
     
     def __repr__(self): # 
-        string = "({})".format(self.state)
+        string = "({})".format(self.edge_v)
         return string # Return this cells representation as string.
+
+    def search_connection(self,player): # When we make a move, we must check if the new move is connected to an wall or not.
+        # We need to if neighbours is connected to a wall state.
+        if(self.is_edge()):#If we is a edge, we need to update neighbors with being connected to us.
+            #if (player == 1):
+
+                #We need to check if we are an edge of interest to this player
+                # We need to check if 
+            self.update_neighbours(self.connected, player)        
+        else:
+            # we need to update our own state, based on our neighbours which are set.
+            update_neighbours = False
+            for neighbour in self.neighbours:
+                if(neighbour.state == player): # If the neighbouring piece is set by current player.
+                    #We need to check if this neighbour is connected to an edge.
+                    if(neighbour.is_connected()):
+                        update_neighbours = True
+                    self.connected += neighbour.connected
+                    #self.connected = neighbour.connected # We are connected to the same edge as the neighbour.
+    
+    def is_connected(self, player):
+        # Return true if we are connected to an edge of interest.
+        # Player 1 is interested in [False,False,False,True] or [True,False,False,False].
+        # Player 2 is interested in RED_T = [False,True,False,False] or [False,False,True,False]
+        if(player == 1):
+            if(self.edge_v[0] or self.edge_v[3]):
+                return True
+        else:
+            if(self.edge_v[1] or self.edge_v[2]):
+                return True
+        return False # We are not connected to an edge that matter to us.
+
+    def update_neighbours(self, connection, player):
+        # Go through every neighbour with player state and update their self.connected value,
+        # TODO: fix update_every neightbours.
+        if(connection == 0):
+            self.connected = connection
+        if(connection == 1):
+            pass
+        # Check if we allready is connected?
+        self.connected = connection
+        for neighbour in self.neighbours:
+            if(self.state == player):
+                neighbour.update_neighbours(connection, player)
+        #
 
     def search_path(self, current_player):
         pass
@@ -87,25 +141,21 @@ class HEX_State(State):
         else:
             dimx = dim
             dimy = dim
-        board = []
-        # state board
+        board = [] # store board.
         for x in range(dimx):
             row = [] # Row matrix.
             for y in range(dimy): # Create a cell, and put into the array.
                 cell = None
-                if(x == 0 and y == 0) or (x == dimx-1 and y == 0) or (x == 0 and y == dimy-1) or (x == dimx-1 and y == dimy-1):
-                    cell = HEX_Cell(x,y,edge=3)
-                elif(x == 0) or (x == dimx-1): # Edge states for Red
-                    cell = HEX_Cell(x,y,edge=2)
-                elif(y == 0) or (y == dimy-1):
-                    cell = HEX_Cell(x,y,edge=1)
-                else: # not edge cell.
-                    cell = HEX_Cell(x,y,edge=0)
-
-                if(cell is not None):
-                    row.append(cell)
-                else: # Catch error.
-                    raise ValueError("A cell was not created for an index")
+                edge_v = [False, False, False, False]
+                if(y == 0): # Left
+                    edge_v[0] = True
+                if(y == dimx-1): # Right
+                    edge_v[3] = True
+                if(x == 0): # Top
+                    edge_v[1] = True
+                if(x == dimy-1): # Bottom
+                    edge_v[2] = True
+                row.append(HEX_Cell(x,y,edge_v=edge_v))
             board.append(row)
         return board
     
@@ -125,7 +175,7 @@ class HEX_State(State):
                     index_neighbours = [index for index in index_neighbours if ( 0 <= index[0] < dimx) and (0 <= index[1] < dimy)]
                 # If the values are negative or greater than the dimention
                 for index in index_neighbours:
-                        cell.neighbours.append(self.board[index[0]][index[1]])
+                    cell.neighbours.append(self.board[index[0]][index[1]])
 
     def change_state(self, move): 
         """ Change state of board with an action to state."""# change the index, based on which made the move, assumes this is a legal action.
