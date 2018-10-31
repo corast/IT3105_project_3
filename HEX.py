@@ -3,9 +3,6 @@ from base.Game import Game
 import copy
 import numpy as np
 import numpy.random as random
-# TODO: add cell state which track if connected to an edge or not, e.g connected_left, connected_right when it is set.
-# TODO: cont, when we select a new piece, we can check whether neighbours are left and right (top, bottom connected) meaning terminal state is reached.
-# TODO: Tanspose board between each player turn, otherwise it would be impossible for the network to play as both players.
 # TODO: Evaluate whether or not we need to update an neighbour state.
 # Keith board. 1d array, of board. player_turn, R1, R2, R3 etc. 1 is p1, 2 is p2, 0 is empty. 
     # We need to store the whole board as an array. Example dim = 5
@@ -40,101 +37,75 @@ class HEX_Cell():
         self.x = x # Keep track of our index
         self.y = y # Keep track of our index
         # We need to keep track of, if we are able to connect to an edge.
-        self.connected = [False, False, False, False] # 0 means we don't connect to anything, 1 is left, 2 is top, 3 is right, 4 is down
+        self.connected = HEX_Cell.NONE
         self.neighbours = [] # List containing every neighbour of an cell. [(r,c-1), (r+1,y-1), (r+1,c);(r-1,c), (r-1,c+1), (r,c+1)]
 
     def is_edge(self):
         """Check if cell is an edge state. """ 
         if(self.edge_v.__eq__(HEX_Cell.NONE)):
-            print(self.edge_v)
             return False
         return True
     
     def is_edge_of_interest(self,player):
+        # Check whether or not we are a connection node to an edge of interest.
         if(player == 1):
-            #We need to check if we are an left or right edge.
-            if(self.edge_v.__eq__(HEX_Cell.BLACK_L) or self.edge_v.__eq__(HEX_Cell.BLACK_R)):
-                return True
+            return self.logical_or_and(HEX_Cell.BLACK_L, HEX_Cell.BLACK_R, self.edge_v)
         else:
-            if(self.edge_v.__eq__(HEX_Cell.RED_T) or self.edge_v.__eq__(HEX_Cell.RED_B)):
-                return True
-        return False # We dont need to update anything.
+            return self.logical_or_and(HEX_Cell.RED_B, HEX_Cell.RED_T, self.edge_v)
+    
+    def logical_or_and(self, a, b ,c):
+        a = np.logical_or(a,b)
+        a = np.logical_and(a,c) # Check whether or not we are atleast one of the edges of interest
+        if(sum(a) == 0):
+            return False
+        return a.tolist()
 
-    def is_clear(self):
+    def is_clear(self): 
+        """ Returns whether or not a board cell is free."""
         if(self.state == 0):
             return True
         return False
 
-    def update_state(self,player):
+    def update_state(self,player): # Return True if we won.
         #We take in a player, number which we use to update our state.
         self.state = player
-        self.search_connection(player) # update connected states based on neighbours.
-    
+        edge = self.is_edge_of_interest(player)
+        print(edge)
+        if(edge): # need to check if we are connected to one of the edges we are looking for
+            self.connected = edge # set that we are connected to an edge of interest.
+
+        self.update_connection(player) # Propagate victory.
+        
+        #Now we are update with highest connection based on every neighbour. 
+        if(self.terminal_state()):
+            return True # return that we won.
+        #return False
+
+        for neighbour in [neigh for neigh in self.neighbours if neigh.state == player]: # Update
+            neighbour.update_neighbours(player,self.connected)
+        # Now that we have updatet ourself, we need to check with the neighbours, find the one with the highest connections.
+        
     def update_connection(self,player):
         # We update ourself, based on the neighbours connections
         # Find most connected neighbour, and set our state to the same
 
+        #search neighbours for the one with the highest connection degree.
+        for neighbour in [neigh for neigh in self.neighbours if neigh.state == player]: # Only look at set neighbour states.    
+            self.connected = (np.logical_or(self.connected, neighbour.connected)).tolist() # Want to keep correct list type.
+
+    # TODO: fix visited neighbours?
+    def update_neighbours(self, player, connected): # Update our neighbours
+        self.connected = connected
+        for neighbour in [neigh for neigh in self.neighbours if neigh.state == player]:
+            if(not neighbour.connected.__eq__(connected)):
+                neighbour.update_neighbours(player, connected)
 
 
-    def search_connection(self,player): # When we make a move, we must check if the new move is connected to an wall or not.
-        # We need to if neighbours is connected to a wall state.
-        if(self.is_edge_of_interest(player)):#If we are an edge of interest, we need to update neighbors with being connected to us.
-            #if (player == 1):
-
-                #We need to check if we are an edge of interest to this player
-                # We need to check if 
-            self.update_neighbours(self.connected, player)        
-        else:
-            # we need to update our own state, based on our neighbours which are set.
-            update_neighbours = False
-            for neighbour in self.neighbours:
-                if(neighbour.state == player): # If the neighbouring piece is set by current player.
-                    #We need to check if this neighbour is connected to an edge.
-                    if(neighbour.is_connected()):
-                        update_neighbours = True
-                    self.connected += neighbour.connected
-                    #self.connected = neighbour.connected # We are connected to the same edge as the neighbour.
-    
-    def is_connected(self, player):
-        # Return true if we are connected to an edge of interest.
-        # Player 1 is interested in [False,False,False,True] or [True,False,False,False].
-        # Player 2 is interested in RED_T = [False,True,False,False] or [False,False,True,False]
-        if(player == 1):
-            if(self.edge_v[0] or self.edge_v[3]):
-                return True
-        else:
-            if(self.edge_v[1] or self.edge_v[2]):
-                return True
-        return False # We are not connected to an edge that matter to us.
-
-    def update_neighbours(self, connection, player):
-        # Go through every neighbour with player state and update their self.connected value,
-        # TODO: fix update_every neightbours.
-        if(connection == 0):
-            self.connected = connection
-        if(connection == 1):
-            pass
-        # Check if we allready is connected?
-        self.connected = connection
-        for neighbour in self.neighbours:
-            if(self.state == player):
-                neighbour.update_neighbours(connection, player)
-        #
-
-        #TODO: FIX infinite loop conditions.
-    def search(self, current_player): #We allways start from left to right, or top to bottom with searching.
-        #We need to check if we have a neighbour that we can visit atleast.
-        if(self.state == current_player and self.is_edge()): # If we are at an end step, we can stop search.
+    def terminal_state(self):
+        if(sum(self.connected) == 2):
             return True
-        
-        #continue searching children.
-        set_neighbours = False
-        for neighbour in self.neighbours:
-            if(neighbour.state == current_player): # If state is set to current player
-                set_neighbours = True
-                neighbour.search(current_player)
-        if(not set_neighbours):
-            return False # We cant search more from here, or we fail.
+        return False
+
 
     def __str__(self): # (edge, state)
         string = "({} {})".format(self.x, self.y)
@@ -143,6 +114,10 @@ class HEX_Cell():
     def __repr__(self): # 
         string = "({})".format(self.edge_v)
         return string # Return this cells representation as string.
+
+    def __eq__(self, other):
+        #An cell should be the same, if they have the same condinates.
+        return self.x == other.x and self.y == other.y
 
 class HEX_State(State):
     def __init__(self, dim, player_turn=1,board=None, winner = None): # Keep track of state of game
@@ -212,9 +187,10 @@ class HEX_State(State):
         #action is a touple or list (x,y)
         x = move[0]; y = move[1]
         if((self.board[x][y]).is_clear()): # check if cell is clear
-            self.board[x][y].update_state(self.player_turn) # Tell cell to update it's value.
             self.legal_states[x][x] = 0 # We need to update legal states aswell.
-            
+            if(self.board[x][y].update_state(self.player_turn)): # Tell cell to update it's value.
+                self.winner = self.player_turn # Set that someone won.
+                print("!!!!!!!!!!! PLAYER {} WON !!!!!!!!!!!!!!".format(self.player_turn))
             #TODO: Check if we won the game before we switch turns.
             self.switch_turn() # We are no longer in play.
         else:
@@ -304,7 +280,16 @@ class HEX(Game):
         # check current game state after a play, if it was winning move or not.
 
 
+def return_test(x=None):
+    if(x):
+        return True
 
+def cell_test():
+    if(return_test([True])):
+        print("True, Trie")
+    
+    if(return_test()):
+        print(", True")
 
 def hex_state_test():
     hex = HEX(5)
@@ -335,62 +320,14 @@ def hex_state_test():
     hex.play((1,4))
     hex.play((4,4))
     hex.state.show_board()
+
+
+
     print("New state")
     for row in state:
         print(row)
 
     #Create a complete game.
+#cell_test()
 
-hex_state_test()
-
-def state_test():
-
-    state_1 = np.zeros((3,3))
-    state_1[1][0] = 1
-    state_1[0][1] = 2
-    state_1[2][1] = 1
-    state_1[1][2] = 2
-    state_1[2][2] = 1
-
-    state_2 = np.zeros((3,3))
-    state_2[0][0] = 1
-    state_2[1][1] = 1
-    state_2[2][2] = 1
-
-    state_3 = np.zeros((4,4)) # Unconnected winning condition
-    state_3[0][0] = 1
-    state_3[0][1] = 1
-    state_3[2][2] = 1
-    state_3[3][3] = 1
-
-    player_turn = 1 # It is player 1 turn to move
-    #Want to check if player 1 won the game of hex or not.
-    #We need to check the column for player 1
-    #for col in state_1.shape()
-    print(state_1.shape)
-    if(player_turn == 2): # row
-        axis_of_interest = 0
-    else: # column
-        axis_of_interest = 1
-    for x in range(state_1.shape[axis_of_interest]-1):
-        #get row, or get column
-        if(axis_of_interest == 0):# We check rows
-            states_0 = state_1[x]
-            states_1 = state_1[x+1]
-        else: # we check columns
-            states_0 = state_1[:,x]
-            states_1 = state_1[:,x+1] # Get next column as well
-
-        #We got the states we are looking for.
-        print(states_0," x:", x)
-        print(states_1," x:", x)
-        print("Next")
-
-
-def check_paths(state ,x,y): # state is an array of next board state.
-    # We simpy
-
-    pass
-    #print(state_2)
-
-#state_test()
+#hex_state_test()
