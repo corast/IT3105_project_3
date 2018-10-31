@@ -27,13 +27,12 @@ import numpy.random as random
 
 class HEX_Cell():
     NONE = [False, False, False, False] # We are not an edge node.
-    BLACK_R = [False,False,False,True] # 
     BLACK_L = [True,False,False,False] #
+    BLACK_R = [False,False,False,True] # 
     RED_T = [False,True,False,False] # 
     RED_B = [False,False,True,False] # 
     # It is impossible to be right and left or top and bottom at the same time.
     # But it is possible to be left/right and top/bot at same time.
-    #BOTH = [0,0,0,0] # 
     def __init__(self,x, y, edge = 0, edge_v = NONE):
         self.state = 0 # Tells wheter or not we have been visited before, and by which player.
         #self.edge = edge # Keep track of whether or not we are an edge cell, and which one.
@@ -46,23 +45,40 @@ class HEX_Cell():
 
     def is_edge(self):
         """Check if cell is an edge state. """ 
-
         if(self.edge_v.__eq__(HEX_Cell.NONE)):
             print(self.edge_v)
             return False
         return True
-
-    def __str__(self): # (edge, state)
-        string = "({} {})".format(self.x, self.y)
-        return string # Return this cells representation as string.
     
-    def __repr__(self): # 
-        string = "({})".format(self.edge_v)
-        return string # Return this cells representation as string.
+    def is_edge_of_interest(self,player):
+        if(player == 1):
+            #We need to check if we are an left or right edge.
+            if(self.edge_v.__eq__(HEX_Cell.BLACK_L) or self.edge_v.__eq__(HEX_Cell.BLACK_R)):
+                return True
+        else:
+            if(self.edge_v.__eq__(HEX_Cell.RED_T) or self.edge_v.__eq__(HEX_Cell.RED_B)):
+                return True
+        return False # We dont need to update anything.
+
+    def is_clear(self):
+        if(self.state == 0):
+            return True
+        return False
+
+    def update_state(self,player):
+        #We take in a player, number which we use to update our state.
+        self.state = player
+        self.search_connection(player) # update connected states based on neighbours.
+    
+    def update_connection(self,player):
+        # We update ourself, based on the neighbours connections
+        # Find most connected neighbour, and set our state to the same
+
+
 
     def search_connection(self,player): # When we make a move, we must check if the new move is connected to an wall or not.
         # We need to if neighbours is connected to a wall state.
-        if(self.is_edge()):#If we is a edge, we need to update neighbors with being connected to us.
+        if(self.is_edge_of_interest(player)):#If we are an edge of interest, we need to update neighbors with being connected to us.
             #if (player == 1):
 
                 #We need to check if we are an edge of interest to this player
@@ -105,9 +121,6 @@ class HEX_Cell():
                 neighbour.update_neighbours(connection, player)
         #
 
-    def search_path(self, current_player):
-        pass
-
         #TODO: FIX infinite loop conditions.
     def search(self, current_player): #We allways start from left to right, or top to bottom with searching.
         #We need to check if we have a neighbour that we can visit atleast.
@@ -122,6 +135,14 @@ class HEX_Cell():
                 neighbour.search(current_player)
         if(not set_neighbours):
             return False # We cant search more from here, or we fail.
+
+    def __str__(self): # (edge, state)
+        string = "({} {})".format(self.x, self.y)
+        return string # Return this cells representation as string.
+    
+    def __repr__(self): # 
+        string = "({})".format(self.edge_v)
+        return string # Return this cells representation as string.
 
 class HEX_State(State):
     def __init__(self, dim, player_turn=1,board=None, winner = None): # Keep track of state of game
@@ -143,9 +164,9 @@ class HEX_State(State):
         else:
             dimx = dim
             dimy = dim
-        board = [] # store board.
+        board = np.zeros((dimx,dimy),dtype=HEX_Cell)
+        #board = np.array()# [] # store board.
         for x in range(dimx):
-            row = [] # Row matrix.
             for y in range(dimy): # Create a cell, and put into the array.
                 cell = None
                 edge_v = [False, False, False, False]
@@ -157,8 +178,9 @@ class HEX_State(State):
                     edge_v[1] = True
                 if(x == dimy-1): # Bottom
                     edge_v[2] = True
-                row.append(HEX_Cell(x,y,edge_v=edge_v))
-            board.append(row)
+                #Change value of element position to an cell
+                board[x][y] = HEX_Cell(x,y,edge_v=edge_v)
+        print(type(board))
         return board
     
     def init_neighbours(self):
@@ -179,32 +201,24 @@ class HEX_State(State):
                 for index in index_neighbours:
                     cell.neighbours.append(self.board[index[0]][index[1]])
 
+    def show_board(self):
+        for row in self.board:
+            for cell in row:
+                print(" {} ".format(cell.state),end="")
+            print("")
+
     def change_state(self, move): 
         """ Change state of board with an action to state."""# change the index, based on which made the move, assumes this is a legal action.
         #action is a touple or list (x,y)
         x = move[0]; y = move[1]
-        if((self.board[x][y]).state == 0): # If the sate is not occipied
-            self.board[x][y].state = self.player_turn # Set state of cell to current player.
+        if((self.board[x][y]).is_clear()): # check if cell is clear
+            self.board[x][y].update_state(self.player_turn) # Tell cell to update it's value.
             self.legal_states[x][x] = 0 # We need to update legal states aswell.
+            
             #TODO: Check if we won the game before we switch turns.
             self.switch_turn() # We are no longer in play.
         else:
             raise ValueError("Illegal action taken trying to puth piece in field ({},{})".format(x,y))
-
-    def check_state(self): # Check a game state, to vertify wether or not current_player made a winning move.
-        #player 1 is playing Black pieces, whilst player 2 is playing Red pieces.
-        if(self.player_turn == 1): # We want to check first column
-            rows_of_interest = self.board[:,0] 
-        else: # We need to check first row
-            rows_of_interest = self.board[0]
-        edge_cells = []
-        present = False
-        for cell in rows_of_interest:
-            if(self.player_turn == cell.state): # simply check if we have a cell with state of player turn along edges.
-                present = True
-                edge_cells.append(cell) # Add edge cell.
-        if(not present):
-            return 0
         
         #TODO: search the network, from the edge cells, exit state sh
 
@@ -261,7 +275,6 @@ class HEX(Game):
     def __init__(self, dim):
         self.state = HEX_State(dim=dim) # Init state for this game.
         print("Game of HEX with dimentions {} x {}".format(dim,dim))
-
 
     def play_state(self, action): # Move, should be an index of where to put an block on the board. Assumes the index is empty state.
         # Then we change the state
@@ -321,6 +334,7 @@ def hex_state_test():
     hex.play((4,3))
     hex.play((1,4))
     hex.play((4,4))
+    hex.state.show_board()
     print("New state")
     for row in state:
         print(row)
