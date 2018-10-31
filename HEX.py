@@ -5,7 +5,9 @@ import numpy as np
 import numpy.random as random
 # TODO: add cell state which track if connected to an edge or not, e.g connected_left, connected_right when it is set.
 # TODO: cont, when we select a new piece, we can check whether neighbours are left and right (top, bottom connected) meaning terminal state is reached.
-
+# TODO: Tanspose board between each player turn, otherwise it would be impossible for the network to play as both players.
+# TODO: Evaluate whether or not we need to update an neighbour state.
+# Keith board. 1d array, of board. player_turn, R1, R2, R3 etc. 1 is p1, 2 is p2, 0 is empty. 
     # We need to store the whole board as an array. Example dim = 5
     #   (x,y) (rows, cols)
     #                      R (3)
@@ -35,7 +37,7 @@ class HEX_Cell():
     def __init__(self,x, y, edge = 0, edge_v = NONE):
         self.state = 0 # Tells wheter or not we have been visited before, and by which player.
         #self.edge = edge # Keep track of whether or not we are an edge cell, and which one.
-        self.edge_v = edge_v # Keep track of specific edge we are.
+        self.edge_v = edge_v # Keep track of what specific edge we are, if any
         self.x = x # Keep track of our index
         self.y = y # Keep track of our index
         # We need to keep track of, if we are able to connect to an edge.
