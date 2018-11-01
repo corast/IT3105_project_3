@@ -21,7 +21,7 @@ import numpy.random as random
     # Cells that contain 0 is empty, and in play
     # Black player (1) is trying to connect y = 0, to y = dim
     # Red player (2) is trying to connet x = 0, to x = dim
-
+    # TODO: Merge self.connected with self.edge_v # Don't need two different ones.
 class HEX_Cell():
     NONE = [False, False, False, False] # We are not an edge node.
     BLACK_L = [True,False,False,False] #
@@ -70,7 +70,6 @@ class HEX_Cell():
         #We take in a player, number which we use to update our state.
         self.state = player
         edge = self.is_edge_of_interest(player)
-        print(edge)
         if(edge): # need to check if we are connected to one of the edges we are looking for
             self.connected = edge # set that we are connected to an edge of interest.
 
@@ -79,8 +78,8 @@ class HEX_Cell():
         #Now we are update with highest connection based on every neighbour. 
         if(self.terminal_state()):
             return True # return that we won.
-        #return False
-
+        #otherwise we need to update neighbours with a new state.
+        
         for neighbour in [neigh for neigh in self.neighbours if neigh.state == player]: # Update
             neighbour.update_neighbours(player,self.connected)
         # Now that we have updatet ourself, we need to check with the neighbours, find the one with the highest connections.
@@ -155,7 +154,7 @@ class HEX_State(State):
                     edge_v[2] = True
                 #Change value of element position to an cell
                 board[x][y] = HEX_Cell(x,y,edge_v=edge_v)
-        print(type(board))
+        #print(type(board))
         return board
     
     def init_neighbours(self):
@@ -190,7 +189,7 @@ class HEX_State(State):
             self.legal_states[x][x] = 0 # We need to update legal states aswell.
             if(self.board[x][y].update_state(self.player_turn)): # Tell cell to update it's value.
                 self.winner = self.player_turn # Set that someone won.
-                print("!!!!!!!!!!! PLAYER {} WON !!!!!!!!!!!!!!".format(self.player_turn))
+                #print("!!!!!!!!!!! PLAYER {} WON !!!!!!!!!!!!!!".format(self.player_turn))
             #TODO: Check if we won the game before we switch turns.
             self.switch_turn() # We are no longer in play.
         else:
@@ -204,14 +203,14 @@ class HEX_State(State):
         #return self.legal_states # Should be as an 1d list too, but with index instead of 1/0 values
         legal_states = []
         for row in self.board:
-            for state in row:
-                if(state.state == 0):
-                    legal_states.append((state.x,state.y))
+            for cell in row:
+                if(cell.is_clear()): # Every cell that is clear
+                    legal_states.append((cell.x,cell.y))
         return legal_states
     
     def get_legal_actions_1d(self):
-        #Return legal actions as a 1d list
-        return self.legal_states.ravel()
+        #Return legal actions as a 1d list, each move as a and 0 or 1, depending on legality of move.
+        return (self.legal_states.ravel()).tolist()
 
     def is_game_over(self): 
         if(self.winner is not None):
@@ -252,25 +251,46 @@ class HEX(Game):
         self.state = HEX_State(dim=dim) # Init state for this game.
         print("Game of HEX with dimentions {} x {}".format(dim,dim))
 
+    # ** Play on a copy of current state, return resulting game with new state.
     def play_state(self, action): # Move, should be an index of where to put an block on the board. Assumes the index is empty state.
         # Then we change the state
         # copy game state
         state_copy = copy.deepcopy(self.state)
+        #print("play_state ",action)
         state_copy.change_state(action) # apply changes to state
+        return self.game_state(state_copy)
         
+    def game_state(self, state):
+        game = copy.copy(self)
+        game.state = state
+        return game
         #Check if current player won based on this.
 
     def play(self, action):
         # We can make a change on the state.
         self.state.change_state(action)
-    
-    def check_state(self):
-        # One simple elimination test, is to check wheter or not there is one used block along the edges.
-        pass
 
+        if(self.is_game_over()):
+            return True
+
+    
+    # ** Get functions
+
+    def get_actions(self): # Actions we can take is based on the current state.
+        #Return legal actions for current player.
+        #Based on which player we are looking at.
+        return self.state.get_legal_actions()
 
     def get_winner(self):
         return self.state.winner
+
+    def get_current_player(self):
+        """ Return which player is at turn"""
+        return self.state.player_turn 
+
+    def get_current_state(self):
+            #return current board state.
+        return self.state 
 
     def state_empty(self, action):
         cell_state = self.state.board[action[0]][action[1]] 
@@ -278,6 +298,29 @@ class HEX(Game):
             return True
         return False
         # check current game state after a play, if it was winning move or not.
+
+    def switch_turns_random(self):
+        #change which turn it is with a random value.
+        self.state.switch_turns_random()
+
+    def init_player_turn(self, start_player): # For the batch mode.
+        if(start_player == 3):
+            self.switch_turns_random()
+        else:
+            self.state.player_turn = start_player
+
+    def is_game_over(self): # Simply check if game is actually over
+        return self.state.is_game_over()
+    
+    def get_prev_player(self):
+        if(self.get_current_player() == 1):
+            return 2
+        return 1  
+
+    def display_turn(self, action):
+        print("Player {} selects board cell {}".format(self.get_prev_player(), action)) #
+        if(self.is_game_over()):
+            print("Player {} wins".format(self.get_prev_player()))
 
 
 def return_test(x=None):
@@ -321,11 +364,10 @@ def hex_state_test():
     hex.play((4,4))
     hex.state.show_board()
 
-
-
-    print("New state")
     for row in state:
-        print(row)
+        for cell in row:
+            print(" {} ".format(cell.edge_v), end="")
+        print("")
 
     #Create a complete game.
 #cell_test()

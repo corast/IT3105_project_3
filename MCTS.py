@@ -33,12 +33,13 @@ class MCTS():
         root_player = node.game.get_current_player() # Seperate simulation vs real game.
         for i in range(0, num_sims): # M = num_sims    
             leaf = self.tree_policy(node, root_player) # Return leaf node we are going to use for rollout from node state.
+            #print("leaf", leaf, leaf.game)
             # Victor is the node in the whole simulated tree that is considered best.
-
             winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
             leaf.backpropagate(winner, root_player) # Go from leaf node and update the values
                         # c = 2, too high exploration, we might actually try to explore more than guarantee winning.
         #TODO: Do we choose UCT1 value, or only Q value? We can set c=0, to remove exploration. Prev c = 1.5
+        
         victor = (node.best_child(root_player, c=0,action=True)) # Get best state node from tree.
         return victor
 
@@ -93,6 +94,7 @@ class MCTS():
             if(variables.verbose >= variables.play):
                 print("Game {} ###".format(game))
             sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims)
+            #print("sim_node",sim_node)
             winner = sim_node.game.get_winner() # get winning player in terminal state
             if(winner == 1):
                 wins[0] += 1

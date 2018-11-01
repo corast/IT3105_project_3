@@ -92,7 +92,7 @@ class NIM(Game, NIM_State): # Expand Game and NIM_State
         return list(range(1,self.max_pieces+1))
 
     def get_current_state(self):
-        #return current board state.
+        #return current board state as one number # number of pieces played in our case
         return self.state 
 
     def get_current_player(self):

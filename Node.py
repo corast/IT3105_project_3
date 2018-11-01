@@ -4,8 +4,8 @@
 import copy # Make copies of game states
 import numpy as np
 import variables
-from State import *
-from Game import *
+from base.State import *
+from base.Game import *
 
 class Node():
     def __init__(self, game:Game, parent=None, action=None, node_depth=0):
@@ -68,6 +68,7 @@ class Node():
     def init_children(self,verbos=0): # connect every possible child to its parent. Expand whole parent.
         actions = self.game.get_actions() # Get actions we can take from a given state in a game.
         #self is the parent we want to add the children to.
+        #print("init_children", actions)
         for action in actions: # for each action, we need to play and add the corresponding state node to parent
             self.expand(action)
 
@@ -78,7 +79,8 @@ class Node():
 
     # ***** ROLLOUT FUNCTIONS
     def rollout_policy(self, actions): # Allows us to change policy if needed
-        return np.random.choice(actions) #randomly choice one of the actions.
+        choice = np.random.choice(len(actions)) #randomly choice one of the indexes
+        return actions[choice] #return choice, from our action list based on index
     
     def rollout(self, root_player): # How we traverse the rest of the tree to terminal
         rollout_state = copy.deepcopy(self.game) # copy game state, since we don't want to keep states from this point onward.
@@ -152,20 +154,19 @@ class Node():
             if(self.node_depth != 1):
                 print("  "*(tabs+1),end="")
             print("++",end="")
-            print("P_{}: [{}:{}] {}/{} winner {}"
-            .format(self.game.get_current_player(), self.action,
-            self.game.get_current_state().num_pieces, self.wins, self.num_visits, self.game.get_winner()))
+            print("P_{}: {} {}/{} winner {}"
+            .format(self.game.get_current_player(), self.action, self.wins, self.num_visits, self.game.get_winner()))
         elif(self.node_depth == 1): # If we are next layer # ! Doest work
             print("--",end="")
-            print("P_{}: [{}:{}] {}/{} {}"
-            .format(self.game.get_current_player(),self.action,self.game.get_current_state().num_pieces, self.wins, self.num_visits,self.score))
+            print("P_{}: {} {}/{} {}"
+            .format(self.game.get_current_player(),self.action, self.wins, self.num_visits,self.score))
         else:
             tabs = self.node_depth-1
             if(tabs > 0):
                 print("  "*(tabs+1),end="")
                 print("--", end="")
-            print("P_{}: [{}:{}] {}/{} {}".format(
-                self.game.get_current_player(),self.action,self.game.get_current_state().num_pieces,
+            print("P_{}: {} {}/{} {}".format(
+                self.game.get_current_player(),self.action,
                 self.wins, self.num_visits,self.score))
         for child in self.children:
             child.print_tree(depth)
