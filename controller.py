@@ -1,6 +1,7 @@
 # Controller 
 #from GameSimulator import *  # Not used..
 from NIM import *
+from HEX import *
 import argparse
 import variables
 #from variables import *
@@ -37,12 +38,12 @@ def check_integer(max):
 def play_nim(max_pieces, num_pieces):
     return NIM(max_pieces,num_pieces) # Return NIM game.
 
-def play_chess():
-    return None
+def play_hex(dim): # TODO: init start player etc.
+    return HEX(dim)
 
 
 FUNCTION_MAP = {'NIM' : play_nim,
-                'CHESS' : play_chess}
+                'HEX' : play_hex}
 
 if __name__=="__main__":
     #Parse command line arguments
@@ -71,8 +72,9 @@ if __name__=="__main__":
                         help="Total number of pieces to begin with")
 
     #command other game..
-    parser_b = subparsers.add_parser("CHESS",help="CHESS help")
-    parser_b.add_argument("baz", type=int, help="baz help")
+    parser_b = subparsers.add_parser("HEX",help="HEX help")
+    parser_b.add_argument("-d","--dimentions", type=check_positive, help="Dimention of board", 
+                default=5, required=False)
 
     args = parser.parse_args()
 
@@ -87,10 +89,14 @@ if __name__=="__main__":
         elif(args.max_pieces == 1):
             raise ValueError("max_pieces must be greater than 1")
         game = play_nim(max_pieces=args.max_pieces, num_pieces=args.num_pieces)
-    elif(args.game == "CHESS"):
+    elif(args.game == "HEX"):
+        game = play_hex(dim=args.dimentions)
         pass
 
     if(game is not None):
         root = Node(game) # Init root node from game state.
         mcts = MCTS(node=root) 
+        #mcts.simulate_best_action(root,10)
         mcts.play_batch(batch=args.batch,num_sims=args.num_sims,start_player=args.start_player)
+    else:
+        raise ValueError("No game instanceiated")

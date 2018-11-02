@@ -38,7 +38,7 @@ class Game():
     @abc.abstractclassmethod
     def init_player_turn(self, start_player):
         """ chose which player start for a given game. """
-        raise NotImplementedError("Implement switch_turn_random function")
+        raise NotImplementedError("Implement init_player_turn function")
     
     @abc.abstractclassmethod
     def get_winner(self):

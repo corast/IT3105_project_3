@@ -6,11 +6,18 @@ import torch.nn.functional as F # optimizer
 from IPython.core.debugger import set_trace
 
 class Module(nn.Module):
-    def __init__(self):
+    def __init__(self): # Define the network in detail
         super().__init__()
-        self.lin = nn.Linear(3,1)
+        self.inL = nn.Linear(25+2,40)
+        self.outL = nn.Linear(40,25) # output is only a board state.
 
-    def forward(self, X):
+
+    def forward(self, input):
         # set_trace() # debugging
-        x = self.lin(X)
-        return x
+        x = self.inL(input) # put input in input layer
+        x = self.outL(x)
+
+        return x # Return output, whatever it is.
+
+
+# The network should have 5x5 inputs + an player id (one_hot vector)
