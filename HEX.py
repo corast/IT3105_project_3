@@ -3,6 +3,8 @@ from base.Game import Game
 import copy
 import numpy as np
 import numpy.random as random
+from math import cos, sin, sqrt, radians
+from colorama import Fore, Style, Back, init
 # TODO: Evaluate whether or not we need to update an neighbour state.
 # Keith board. 1d array, of board. player_turn, R1, R2, R3 etc. 1 is p1, 2 is p2, 0 is empty. 
     # We need to store the whole board as an array. Example dim = 5
@@ -111,7 +113,7 @@ class HEX_Cell():
         return string # Return this cells representation as string.
     
     def __repr__(self): # 
-        string = "({})".format(self.edge_v)
+        string = "({})".format(self.state)
         return string # Return this cells representation as string.
 
     def __eq__(self, other):
@@ -133,24 +135,24 @@ class HEX_State(State):
         """ Create the board, with dimentions specified along with a HEX_Cell as each element. """
         #dim can be a touple,list or an int.
         if (type(dim) == tuple or type(dim) == list): #we have a touple or list.
-            dimx = dim[0]
-            dimy = dim[1]
+            self.dimx = dim[0]
+            self.dimy = dim[1]
         else:
-            dimx = dim
-            dimy = dim
-        board = np.zeros((dimx,dimy),dtype=HEX_Cell)
+            self.dimx = dim
+            self.dimy = dim
+        board = np.zeros((self.dimx,self.dimy),dtype=HEX_Cell)
         #board = np.array()# [] # store board.
-        for x in range(dimx):
-            for y in range(dimy): # Create a cell, and put into the array.
+        for x in range(self.dimx):
+            for y in range(self.dimy): # Create a cell, and put into the array.
                 cell = None
                 edge_v = [False, False, False, False]
                 if(y == 0): # Left
                     edge_v[0] = True
-                if(y == dimx-1): # Right
+                if(y == self.dimx-1): # Right
                     edge_v[3] = True
                 if(x == 0): # Top
                     edge_v[1] = True
-                if(x == dimy-1): # Bottom
+                if(x == self.dimy-1): # Bottom
                     edge_v[2] = True
                 #Change value of element position to an cell
                 board[x][y] = HEX_Cell(x,y,edge_v=edge_v)
@@ -190,7 +192,6 @@ class HEX_State(State):
             if(self.board[x][y].update_state(self.player_turn)): # Tell cell to update it's value.
                 self.winner = self.player_turn # Set that someone won.
                 #print("!!!!!!!!!!! PLAYER {} WON !!!!!!!!!!!!!!".format(self.player_turn))
-            #TODO: Check if we won the game before we switch turns.
             self.switch_turn() # We are no longer in play.
         else:
             raise ValueError("Illegal action taken trying to puth piece in field ({},{})".format(x,y))
@@ -211,6 +212,10 @@ class HEX_State(State):
     def get_legal_actions_1d(self):
         #Return legal actions as a 1d list, each move as a and 0 or 1, depending on legality of move.
         return (self.legal_states.ravel()).tolist()
+
+    def get_board_1d(self):
+        #return all cells as an array [R1,R2,R3,R4,R5]
+        return self.board.ravel()
 
     def is_game_over(self): 
         if(self.winner is not None):
@@ -245,6 +250,80 @@ class HEX_State(State):
             return True
         return False
 
+    def draw_board(self):
+        #This function is suppose to draw the game board.
+        print("Game state")
+        board_p = [[] for i in range((self.dimx-1)+self.dimx)]
+        for x,row in enumerate(self.board):
+            #brow = []
+            for y,cell in enumerate(row):
+                x_ = x+y
+                #y_ = -x + y + self.dimy-1
+                board_p[x_].insert(0,cell) # Add to row as first index, corresponding to output.
+
+        init(autoreset=True) # Automaticly reset colour back to normal after every printout.
+        # * With colour
+        for x,row in enumerate(board_p):
+            
+            for y,cell in enumerate(row):
+                state = Fore.WHITE+str(cell.state)
+                if(cell.state == 2):
+                    state = Fore.RED + str(cell.state)
+                elif(cell.state == 1):
+                    state = Fore.BLUE + str(cell.state)
+
+                if(y == 0): # If we are first element of the row
+                    i_y = self.intent_index(x)
+                    print("{0:>{i}}".format("",i=i_y*2),end="") # create indent spaces, 
+                    if(y==len(row)-1): # If we are the only element ( top and bottom)
+                        print(" {} ".format(state),end="")
+                    else:
+                        # We need to print a wall, if we are not the middle row.
+                        # We know that dim-1 or i_y == 0 is the middle row
+                        if(i_y == 0): # We are middle row in plot. No wall
+                            string = ""
+                            #print(" {}".format(state),end="")
+                        else:
+                            # Need to check wheter we are a blue or red edge
+                            #print(cell.x,cell.y ,cell.edge_v, HEX_Cell.BLACK_L)
+                            if(cell.edge_v.__eq__(HEX_Cell.BLACK_L)):
+                                string = Fore.BLUE + "|"
+                                #print("{}{}".format(Back.BLUE+" ",state),end="")
+                            else:
+                                string = Fore.RED + "|"
+                                #print("{}{}".format(,state),end="")
+                        print("{}{}".format(string,state),end="")
+                elif(y == len(row)-1): # If we are the last element on the row
+                    i_y = self.intent_index(x) 
+                    if(i_y == 0): # We are middle row in plot. No wall
+                        string = ""
+                    else:
+                        # * We need to check wheter or not we are a blue or red edge.
+                        if((cell.edge_v).__eq__(HEX_Cell.RED_T)): # We need to print red if we are a red edge, or blue otherwise
+                            string = Fore.RED + "|"
+                        else:
+                            string = Fore.BLUE + "|"
+                    print("---{}{}".format(state,string),end="")
+                else:
+                    print("---{}".format(state),end="")
+            print("")
+
+
+        # Number of indentations:
+        #xpad = cos(rotation)*xi - sin(rotation)*yi
+        #ypad = sin(rotation)*xi + cos(rotation)*yi
+        # We need to expand the array with spare cells.
+        #print(np.zeros(((self.dimx-1)+self.dimx, (self.dimy-1)+self.dimy)))
+
+    # Calulate 45 degrees ø(rotation). [x',y'] = k * [[cos(ø),sin(ø)],[-sin(ø),cos(ø)]]*[x,y]
+    # ø = pi/4 (45 degrees in radians with x axis SE), k = sqrt(2), since sin(ø) = cos(ø) = sqrt(2)/2 , if ø is pi/4
+    # gives [x',y']=[[1,1],[-1,1]][x,y] = [x+y,-x+y], taking into account negative indexes w.r.t. x axis, and zero indexing. [x+y,-x+y+dim-1] 
+    def rotate_index(self,x,y): 
+        return x+y,-x+y+self.dimy-1
+
+    def intent_index(self,x):
+        return abs(self.dimy - (x+1))
+        
 # Player 1 is Red, player 2 is Blue.
 class HEX(Game):
     def __init__(self, dim):
@@ -321,6 +400,10 @@ class HEX(Game):
         print("Player {} selects board cell {}".format(self.get_prev_player(), action)) #
         if(self.is_game_over()):
             print("Player {} wins".format(self.get_prev_player()))
+    
+    def draw_board(self):
+        self.state.draw_board()
+
 
 
 def return_test(x=None):
@@ -364,12 +447,16 @@ def hex_state_test():
     hex.play((4,4))
     hex.state.show_board()
 
-    for row in state:
-        for cell in row:
-            print(" {} ".format(cell.edge_v), end="")
-        print("")
+    hex.draw_board()
+
+    #for row in state:
+    #    for cell in row:
+    #        print(" {} ".format(cell.edge_v), end="")
+    #    print("")
 
     #Create a complete game.
 #cell_test()
 
-#hex_state_test()
+
+
+hex_state_test()

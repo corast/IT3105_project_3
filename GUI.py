@@ -33,12 +33,12 @@ root.mainloop()
     # -4-            (0,0)                         1
     # -3-         (1,0) (0,1)                     6  2
     # -2-      (2,0) (1,1) (0,2)                 11  7  3
-    # -1-   (3,0) (2,1) (1,2) (0,3)             15  12  8  4       
-    #    (4,0) (3,1) (2,2) (1,3) (0,4)         15 16    13  9  5       
-    #       (4,1) (3,2) (2,3) (1,4)              18  17  14 10
-    #          (4,2) (3,3) (2,4)                   20 19 18
-    #             (4,3) (3,4)                        21 22
-    #                (4,4)                             23
+    # -1-   (3,0) (2,1) (1,2) (0,3)             16  12  8  4       
+    #    (4,0) (3,1) (2,2) (1,3) (0,4)         21  17  13  9  5       
+    #       (4,1) (3,2) (2,3) (1,4)              22  18  14 10
+    #          (4,2) (3,3) (2,4)                   23  19   15
+    #             (4,3) (3,4)                        24  20
+    #                (4,4)                             25
 
 
 #[[math.cos(rot), -math.sin(rot)],
@@ -57,7 +57,7 @@ class gameGrid():
         self.frame = frame
         self.white = PhotoImage(file="images/white35.gif")
         #self.white = self.white.zoom(30)
-        self.red = PhotoImage(file="images/hex_white.png")
+        self.red = PhotoImage(file="images/red35.gif")
         self.blue = PhotoImage(file="images/blue35.gif")
         self.drawGridHEX()
         #self.playInfo = playInfo()
@@ -70,33 +70,44 @@ class gameGrid():
                 l.pack()
                 l.image = self.white
                 l.place(anchor=NW, x=xi, y=YPAD + yi * IMG_SIZE)
-                l.bind('<Button-1>', lambda e: self.on_click(e))
+                #l.bind('<Button-1>', lambda e: self.on_click(e))
                 xi += 2 * IMG_SIZE
 
     def drawGridHEX(self):
         hex_row = 5 # start at row_0, increment for every 1, 2, ... , dim by 1
         # x - horisonta, y - vertical
         count = 0
-        rotation = -0.785398 # radians aprox 45 degree
+        rotation = radians(0);a=0.785398 # radians aprox 45 degree
         for xi in range(0, GRID_SIZE): # 
             #yi = XPAD + xi * IMG_SIZE
             for yi in range(0, GRID_SIZE):
-                xpad = cos(rotation)*xi - sin(rotation)*yi
-                ypad = sin(rotation)*yi + cos(rotation)*xi
+                xpad = xi+yi
+                ypad = -xi + yi + GRID_SIZE-1
+                #xpad = cos(rotation)*xi - sin(rotation)*yi
+                #ypad = sin(rotation)*xi + cos(rotation)*yi
                 print(xi,yi, "->",xpad, ypad)
                 xpad = GRID_SIZE - xi
-                l = Label(self.frame, image=self.white)
+                if((xi == yi and xi == 0)):
+                    l = Label(self.frame, image=self.red)
+                else:
+                    l = Label(self.frame, image=self.white)
                 l.pack()
                 l.image = self.white
-                l.place(anchor=NW, x=xpad*IMG_SIZE, y=YPAD*yi + IMG_SIZE)
-                l.bind('<Button-1>', lambda e: self.on_click(e))
-                #yi += 2 * IMG_SIZE
-                count += 1 
-                if(count%5 == 0):
-                    print("hex_row",hex_row,xi,yi)
-                    hex_row -= 1
-                    if(hex_row == 0):
-                        hex_row = 5
+                #x_pad = 
+                # GRID_size - (x+1)
+                if(xi == 0 and yi == 0):
+                    print("Root",xpad*IMG_SIZE,ypad*IMG_SIZE)
+                l.place(anchor=CENTER, x=xpad*IMG_SIZE, y=ypad*IMG_SIZE)
+                l.bind('<Button-1>', lambda e: self.on_click(e,x=xi,y=yi))
+        l = Label(self.frame, image=self.blue)
+        l.image = self.white
+        l.place(anchor=NW, x=0, y=0)
+        l = Label(self.frame, image=self.blue)
+        l.image = self.white
+        l.place(anchor=NW, x=0, y=8*30)
+        l = Label(self.frame, image=self.blue)
+        l.image = self.white
+        l.place(anchor=NW, x=8*30, y=0)
 
     def getCoordinates(self, widget):
         row = (widget.winfo_y() - YPAD) / IMG_SIZE
@@ -122,11 +133,11 @@ class gameGrid():
         label.pack()
         label.place(anchor=NW, x = 20, y = 20)
     
-    def on_click(self,event):
-        print(event)
+    def on_click(self,event,x,y):
+        print(event,x,y)
 
     """
-    def on_click(self, event):
+    def on_click(self, event,x,y):
         if event.widget.image != self.white:
             return
         self.toggleColor(event.widget)
@@ -146,9 +157,9 @@ class gameGrid():
 # [[math.cos(rot), -math.sin(rot)], [math.sin(rot), math.cos(rot)]]
 class gameWindow:
     def __init__(self, window):
-        self.frame = Frame(window, width=WIN_WIDTH, height=WIN_HEIGHT)
+        self.frame = Frame(window, width=500, height=500)
         self.frame.pack()
-        self.gameGrid = gameGrid(self.frame)
+        self.gameGrid = gameGrid(self.frame) # Put gamegrid into the frame(window)
 
 
 if(__name__ == "__main__"):
