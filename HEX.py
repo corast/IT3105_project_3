@@ -331,8 +331,6 @@ class HEX_State(State):
         #                                       
         #                                                       
         #                                               
-
-
         # Number of indentations:
         #xpad = cos(rotation)*xi - sin(rotation)*yi
         #ypad = sin(rotation)*xi + cos(rotation)*yi

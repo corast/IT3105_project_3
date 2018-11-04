@@ -1,0 +1,54 @@
+# Keep track of training data to use on the network, i.e. keep history of our plays.
+
+# We need to store this incase we close our program, and want to keep training.
+# Should be storer in a .csv file. for easy access next time.
+# .CSV file should contain: A state input, Player ID , + Output on all states.  dimxdim + PID input + dimxdim output.
+
+import csv # Gives us the oppurtunity to write to an file.
+
+class Dataset():
+    def __init__(self, filepath):
+        self.filepath = filepath
+    
+    # TODO: specify an random amount as cases
+    # TODO: use dictionaries instead?
+
+    def read_csv(self,amount=1): # amount is to specify whether or not we want all the file or not.
+        # read the content of the csv file.
+        with open(self.filepath) as csv_file:
+            csv_reader = csv.reader(csv_file,delimiter=",")
+
+            line_count = 0
+            for row in csv_reader:
+                if(line_count == 0): # Handle header
+                    print("headers: {}".format(row))
+                    line_count += 1
+                else:
+                    print(row)
+                line_count += 1
+
+    def update_csv(self,mode="a",header=[],data=[[]]): # Data should be an array of arrays, with all the data we need
+        # The array must be [[row1],[row2]] etc. not [row1]
+        # []
+        # Mode specify if we want to replace the file with data parameter, or append new data.
+        with open(self.filepath,mode=mode,newline="") as history_file:
+            # Init writer to the file, with dialect
+            dataset_writer = csv.writer(history_file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            if(mode == "w"): # We need to write the header aswell.
+                dataset_writer.writerow(header)
+            # Write the actual data.
+            for row in data:
+                print(row)
+                dataset_writer.writerow(row)
+
+def test_dataset_write():
+    dataset = Dataset("Data/dataset.csv")
+    data = [["0,0,1,0,0,1,0,1,0,1,0,1,1", 2, 0.45],[2, 1, 0.3]]
+    header = ["board", "pid", "output"]
+    dataset.update_csv(header=header,data=data,mode="w")
+
+def test_dataset_read():
+    dataset = Dataset("Data/dataset.csv")
+    dataset.read_csv()
+
+test_dataset_write()

@@ -78,10 +78,6 @@ class MCTS():
         
         wins = [0,0] # Keep track of amount of wins for both players,
         start_state = [0,0] # Keep track of amount of times each player start a game.
-        #wins_p1 = 0 # track wins for player 1.
-        #wins_p2 = 0 # track wins for player 2
-        #p1_starts = 0 # track number of times player 1 make first move.
-        #p2_starts = 0 # track number of times player 2 make first move.
         for game in range(1,batch+1): # from 1 to batch plays.
             sim_node = copy.deepcopy(self.root) # create a copy of the start state.
             sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
@@ -138,7 +134,8 @@ def testMCTS():
 #test_batch()
 #test_game()
 #testMCTS()
-"""
+""" 
+    * Backprogagate
     def backpropagation(self, node): # Backpropagation - Passing the evaluation of a final state back up the tree, 
         # updating relevant data (see course lecture notes) at all nodes and edges on the path from the final state to the tree root.
         node.stats = update_stats(node,resul)
