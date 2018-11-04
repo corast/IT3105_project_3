@@ -264,15 +264,19 @@ class HEX_State(State):
         init(autoreset=True) # Automaticly reset colour back to normal after every printout.
         # * With colour
         for x,row in enumerate(board_p):
-            
+                # TODO: COLOUR THE PATH GREEN THAT HAS WON.
             for y,cell in enumerate(row):
+                # Figure out what colour the state should be in. 
                 state = Fore.WHITE+str(cell.state)
                 if(cell.state == 2):
                     state = Fore.RED + str(cell.state)
                 elif(cell.state == 1):
                     state = Fore.BLUE + str(cell.state)
 
-                if(y == 0): # If we are first element of the row
+                # if state is current piece, we can colour it yellow.
+                # Green states should be the correct path.
+
+                if(y == 0): # * If we are first element of the row
                     i_y = self.intent_index(x)
                     print("{0:>{i}}".format("",i=i_y*2),end="") # create indent spaces, 
                     if(y==len(row)-1): # If we are the only element ( top and bottom)
@@ -281,32 +285,52 @@ class HEX_State(State):
                         # We need to print a wall, if we are not the middle row.
                         # We know that dim-1 or i_y == 0 is the middle row
                         if(i_y == 0): # We are middle row in plot. No wall
-                            string = ""
-                            #print(" {}".format(state),end="")
+                            string = " "
                         else:
                             # Need to check wheter we are a blue or red edge
-                            #print(cell.x,cell.y ,cell.edge_v, HEX_Cell.BLACK_L)
                             if(cell.edge_v.__eq__(HEX_Cell.BLACK_L)):
-                                string = Fore.BLUE + "|"
-                                #print("{}{}".format(Back.BLUE+" ",state),end="")
+                                string = Fore.BLUE + "/"
                             else:
-                                string = Fore.RED + "|"
-                                #print("{}{}".format(,state),end="")
+                                string = Fore.RED + "\\"
                         print("{}{}".format(string,state),end="")
-                elif(y == len(row)-1): # If we are the last element on the row
+                elif(y == len(row)-1): # * If we are the last element on the row
                     i_y = self.intent_index(x) 
                     if(i_y == 0): # We are middle row in plot. No wall
                         string = ""
                     else:
                         # * We need to check wheter or not we are a blue or red edge.
                         if((cell.edge_v).__eq__(HEX_Cell.RED_T)): # We need to print red if we are a red edge, or blue otherwise
-                            string = Fore.RED + "|"
+                            string = Fore.RED + "\\"
                         else:
-                            string = Fore.BLUE + "|"
+                            string = Fore.BLUE + "/"
                     print("---{}{}".format(state,string),end="")
-                else:
+                else: # * Any element in between the rows.
                     print("---{}".format(state),end="")
             print("")
+
+
+        # We want the board to look like this:
+        #                       
+        #                               1
+        #                              / \
+        #                            /0---1\
+        #                            / \ / \
+        #                          /0---1---2\
+        #                          / \ / \ / \
+        #                        /0---1---2---2\
+        #                        / \ / \ / \ / \
+        #                       1---1---0---2---2
+        #                        \ / \ / \ / \ /   
+        #                        \2---1---2---2/
+        #                          \ / \ / \ /
+        #                          \1---2---0/
+        #                            \ / \ /
+        #                            \1---0/
+        #                              \ /  
+        #                               1                    
+        #                                       
+        #                                                       
+        #                                               
 
 
         # Number of indentations:
