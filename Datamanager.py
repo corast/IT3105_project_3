@@ -9,6 +9,7 @@
 # The PID should be two bits: (1,0) for player 1 and (1,1) for player 2.
 
 import csv # Gives us the oppurtunity to write to an file.
+import numpy as np
 #import pandas
 class Datamanager():
     def __init__(self, filepath):
@@ -33,6 +34,14 @@ class Datamanager():
                     #print(row)
                 line_count += 1
         return file
+
+    def read_random(self, amount=1): # TODO: handle training_test set.
+        """ Return random x shufled amount of rows from csv file """
+        data = self.read_csv() # read everything.
+        tot_size = len(data)
+        num = self.return_num(amount,tot_size)
+        # TODO: handle cases, like casemanager...
+
 
     def update_csv(self,mode="a",header=[],data=[[]]): # Data should be an array of arrays, with all the data we need
         # The array must be [[row1],[row2]] etc. not [row1]
@@ -69,6 +78,22 @@ class Datamanager():
             self.update_csv(mode="w",header=header,data=new_data)
         else:
             self.update_csv(mode="w",data=new_data)
+    
+    def return_num(self, num, tot_size):
+        """ Return number of cases we want to keep. """
+        # Either a fraction, all cases or a specific number.
+        if(num != 1):
+            #check if an integer of a float.
+            if(type(num) == float):  # if float
+                if(num > 1):
+                    num_floor = np.floor(num)
+                    num = num - num_floor # only keep decimal places
+                num = int(tot_size*num) # Keep only the specified fraction.
+
+            if(tot_size < num):    
+                num = tot_size
+            return num
+        return tot_size # Know we want all cases.
 
 
 def test_dataset_write():

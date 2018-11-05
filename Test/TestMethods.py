@@ -122,7 +122,5 @@ class TestDatamanager(unittest.TestCase):
         self.assertEqual(len(data_updated_2), len(data_2))
         
 
-
-
 if __name__=="__main__":
     unittest.main()
