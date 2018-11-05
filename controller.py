@@ -45,6 +45,9 @@ def play_hex(dim): # TODO: init start player etc.
 FUNCTION_MAP = {'NIM' : play_nim,
                 'HEX' : play_hex}
 
+
+    # g = num_sims
+    #
 if __name__=="__main__":
     #Parse command line arguments
     parser = argparse.ArgumentParser(

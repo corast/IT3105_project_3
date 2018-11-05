@@ -5,6 +5,7 @@ import numpy as np
 import numpy.random as random
 from math import cos, sin, sqrt, radians
 from colorama import Fore, Style, Back, init
+from misc import *
 # TODO: Evaluate whether or not we need to update an neighbour state.
 # Keith board. 1d array, of board. player_turn, R1, R2, R3 etc. 1 is p1, 2 is p2, 0 is empty. 
     # We need to store the whole board as an array. Example dim = 5
@@ -121,14 +122,17 @@ class HEX_Cell():
         return self.x == other.x and self.y == other.y
 
 class HEX_State(State):
-    def __init__(self, dim, player_turn=1,board=None, winner = None): # Keep track of state of game
+    def __init__(self, dim, player_turn=1,board=None, winner = None,legal_cells = None): # Keep track of state of game
         self.player_turn = player_turn # First player is always 1, unless otherwise specified
         self.winner = winner # Store which player won a specific game. {1 or 2, -1 if tie}
         if(board is not None): # Means we start with a specific board state
+            # TODO: handle difference in board input.
             self.board = board
+            # TODO: legal states ...
+            self.legal_cells = legal_cells
         else:
             self.board = self.createBoard(dim) # dim
-            self.legal_states = np.ones((dim,dim)) # Simple array, to keep track of legal moves we can make from a given board. 
+            self.legal_cells = np.ones((dim,dim)) # Simple array, to keep track of legal moves we can make from a given board. 
             self.init_neighbours() # connect neighbouring cells. To easily search for complete path later.
 
     def createBoard(self, dim):
@@ -188,7 +192,7 @@ class HEX_State(State):
         #action is a touple or list (x,y)
         x = move[0]; y = move[1]
         if((self.board[x][y]).is_clear()): # check if cell is clear
-            self.legal_states[x][x] = 0 # We need to update legal states aswell.
+            self.legal_cells[x][y] = 0 # We need to update legal states aswell.
             if(self.board[x][y].update_state(self.player_turn)): # Tell cell to update it's value.
                 self.winner = self.player_turn # Set that someone won.
                 #print("!!!!!!!!!!! PLAYER {} WON !!!!!!!!!!!!!!".format(self.player_turn))
@@ -209,13 +213,24 @@ class HEX_State(State):
                     legal_states.append((cell.x,cell.y))
         return legal_states
     
-    def get_legal_actions_1d(self):
+    def get_legal_actions_1d(self): # * to check with output of Neural Network. After the loss function. bc,we want to learn the rules too.
         #Return legal actions as a 1d list, each move as a and 0 or 1, depending on legality of move.
-        return (self.legal_states.ravel()).tolist()
+        return (self.legal_cells.ravel()).tolist()
 
     def get_board_1d(self):
         #return all cells as an array [R1,R2,R3,R4,R5]
         return self.board.ravel()
+    
+    def get_state_as_input_with_pid(self): # Return this state as it should be input to the Neural Network.
+        # State + PID
+        # How can we go from an array of dimxdim to dimxdimx2 + 2 ?
+        # We need to create a dimxdimx2 array
+        state_array = np.zeros((self.dimx*self.dimy*2))
+        for row in self.board:
+            for cell in row:
+                one_hot = int_to_one_hot_vector(cell.state, 2)
+                #We need to put this into place 
+                pass
 
     def is_game_over(self): 
         if(self.winner is not None):
@@ -250,9 +265,8 @@ class HEX_State(State):
             return True
         return False
 
-    def draw_board(self):
+    def draw_board(self): # * Draw a board in the command line
         #This function is suppose to draw the game board.
-        print("Game state")
         board_p = [[] for i in range((self.dimx-1)+self.dimx)]
         for x,row in enumerate(self.board):
             #brow = []
@@ -356,7 +370,7 @@ class HEX(Game):
     def play_state(self, action): # Move, should be an index of where to put an block on the board. Assumes the index is empty state.
         # Then we change the state
         # copy game state
-        state_copy = copy.deepcopy(self.state)
+        state_copy = copy.deepcopy(self.state) # Copy roots game state.
         #print("play_state ",action)
         state_copy.change_state(action) # apply changes to state
         return self.game_state(state_copy)
@@ -382,6 +396,10 @@ class HEX(Game):
         #Based on which player we are looking at.
         return self.state.get_legal_actions()
 
+    def get_legal_actions_bool(self):
+        return self.state.get_legal_actions_1d()
+
+
     def get_winner(self):
         return self.state.winner
 
@@ -393,12 +411,27 @@ class HEX(Game):
             #return current board state.
         return self.state 
 
-    def state_empty(self, action):
+    def get_prev_player(self):
+        if(self.get_current_player() == 1):
+            return 2
+        return 1  
+
+    def get_dimentions(self):
+        return self.state.dimx,self.state.dimy # Returns 25x25 dimentions.
+
+    # ** Check(is) functions
+
+    def is_cell_empty(self, action):
         cell_state = self.state.board[action[0]][action[1]] 
         if(cell_state == 0):
             return True
         return False
         # check current game state after a play, if it was winning move or not.
+
+    def is_game_over(self): # Simply check if game is actually over
+        return self.state.is_game_over()
+
+    # ** Misc functions
 
     def switch_turns_random(self):
         #change which turn it is with a random value.
@@ -410,23 +443,15 @@ class HEX(Game):
         else:
             self.state.player_turn = start_player
 
-    def is_game_over(self): # Simply check if game is actually over
-        return self.state.is_game_over()
-    
-    def get_prev_player(self):
-        if(self.get_current_player() == 1):
-            return 2
-        return 1  
+    # ** Visualization functions.
 
-    def display_turn(self, action):
+    def display_turn(self, action): # TODO: Fix display_turn for each game.
         print("Player {} selects board cell {}".format(self.get_prev_player(), action)) #
         if(self.is_game_over()):
             print("Player {} wins".format(self.get_prev_player()))
     
-    def draw_board(self):
+    def display_board(self):
         self.state.draw_board()
-
-
 
 def return_test(x=None):
     if(x):
@@ -469,7 +494,7 @@ def hex_state_test():
     hex.play((4,4))
     hex.state.show_board()
 
-    hex.draw_board()
+    hex.display_board()
 
     #for row in state:
     #    for cell in row:
@@ -481,4 +506,4 @@ def hex_state_test():
 
 
 
-hex_state_test()
+#hex_state_test()

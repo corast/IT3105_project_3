@@ -43,10 +43,11 @@ class Node():
 
     # ****** SELECT FUNCTION
 
-    def best_child(self, root_player, c=2,action=False): # Return best child from a parent node 
+    def best_child(self, root_player, c=2, action=False, data=False): # Return best child from a parent node 
         # need to check children to self, and pick the action which has the best value / Visits.
         # Must handle children that has not been visited yet
-        #create a list of every child which has not been explored
+        # create a list of every child which has not been explored
+        # * If data=True, we need to return the number of visits to each action state as well.
         """
         #TODO: What to do when we simulate less than child states, and want to make a move?
         if(action): # we need to choose only from the explored children
@@ -54,10 +55,24 @@ class Node():
             choices = [self.get_score(child) for child in explored]
             return self.children[np.argmax(choices)]
         """
+        #TODO: handle creating a case from the child values. Number of visits, when requested by the actual game. 
+
+        if(data): # * If we want to return important information about the child states values, for creating a training case.
+            # We should return an array with 25x25 values.
+            dimention = self.game.get_dimentions() # Should return two dimentions, x and y.
+            data_visits = np.zeros((dimention[0]*dimention[1])).tolist() # create array to keep states.
+            for child in self.children:
+                # We need to get the action, and use it to update the array.
+                action = child.action # Should be a touple for HEX.
+                visits = child.num_visits # What we want to store.
+                data_visits[action[0]*dimention[0]+action[1]] = visits
+            print(data_visits)
+            print(self.game.get_legal_actions_bool()) 
+
         # * If we have one unexplored node left.
         unexplored = [child for child in self.children if child.num_visits == 0]
         if(len(unexplored) != 0):
-            return np.random.choice(unexplored)
+            return np.random.choice(unexplored) # Randomly choose from unvisited nodes.
         # * Select child with best score
         choices = [self.get_score(child, c) for child in self.children] # Get score from each child node.
         return self.children[np.argmax(choices)] # Select index of best child.

@@ -33,14 +33,16 @@ class MCTS():
         root_player = node.game.get_current_player() # Seperate simulation vs real game.
         for i in range(0, num_sims): # M = num_sims    
             leaf = self.tree_policy(node, root_player) # Return leaf node we are going to use for rollout from node state.
+            
             #print("leaf", leaf, leaf.game)
             # Victor is the node in the whole simulated tree that is considered best.
             winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
             leaf.backpropagate(winner, root_player) # Go from leaf node and update the values
                         # c = 2, too high exploration, we might actually try to explore more than guarantee winning.
-        #TODO: Do we choose UCT1 value, or only Q value? We can set c=0, to remove exploration. Prev c = 1.5
-        
-        victor = (node.best_child(root_player, c=0,action=True)) # Get best state node from tree.
+        # TODO: handle creating the case from simulation results. i.e. get number of visits to each node.
+        # * [(0,0)=3,(0,1)=1,(0,2)=40,..., PID]
+        # We need to create a seperate node.best_child function for when we actually selects a move, since we might want to get the data aswell.
+        victor = (node.best_child(root_player, c=0, action=True,data=True)) # Get best state node from tree.
         return victor
 
         #return node.best_child(node.game.get_current_player()).action # After we are done, we select best action from parent.
@@ -67,7 +69,7 @@ class MCTS():
                 #victor.show_tree(100)
                 if(variables.verbose >= variables.play):
                     victor.game.display_turn(victor.action) # Display what happened to get to this state.
-            #node = Node(game=game, parent=node, action=action, node_depth=node.node_depth+1)
+                    victor.game.display_board()
         return node # return termal node, which is the final state of our game.
 
         #TODO: had self.root.is_termal_node(), and self.root = Node(game=new_state.game,parent=self.root, action=new_state.action, node_depth=new_state.node_depth)

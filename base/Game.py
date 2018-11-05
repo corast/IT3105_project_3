@@ -43,3 +43,13 @@ class Game():
     @abc.abstractclassmethod
     def get_winner(self):
         raise NotImplementedError("Implement get_winner function")
+
+    @abc.abstractclassmethod
+    def get_dimentions(self):
+        raise NotImplementedError("Implement get_dimentions function")
+
+    # Debugging
+    @abc.abstractclassmethod
+    def get_legal_actions_bool(self):
+        # Return legal actions as a 0 or 1, if the are are actually legal or not
+        raise NotImplementedError("Implement get_legal_actions function")
