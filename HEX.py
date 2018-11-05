@@ -5,6 +5,8 @@ import numpy as np
 import numpy.random as random
 from math import cos, sin, sqrt, radians
 from colorama import Fore, Style, Back, init
+import variables
+
 from misc import *
 # TODO: Evaluate whether or not we need to update an neighbour state.
 # Keith board. 1d array, of board. player_turn, R1, R2, R3 etc. 1 is p1, 2 is p2, 0 is empty. 
@@ -132,7 +134,8 @@ class HEX_State(State):
             self.legal_cells = legal_cells
         else:
             self.board = self.createBoard(dim) # dim
-            self.legal_cells = np.ones((dim,dim)) # Simple array, to keep track of legal moves we can make from a given board. 
+            self.legal_cells = np.ones((dim,dim)).astype(int) # Simple array, to keep track of legal moves we can make from a given board. 
+            self.state_array = np.zeros((self.dimx*self.dimy*2)).astype(int).tolist()
             self.init_neighbours() # connect neighbouring cells. To easily search for complete path later.
 
     def createBoard(self, dim):
@@ -193,9 +196,16 @@ class HEX_State(State):
         x = move[0]; y = move[1]
         if((self.board[x][y]).is_clear()): # check if cell is clear
             self.legal_cells[x][y] = 0 # We need to update legal states aswell.
+
             if(self.board[x][y].update_state(self.player_turn)): # Tell cell to update it's value.
                 self.winner = self.player_turn # Set that someone won.
                 #print("!!!!!!!!!!! PLAYER {} WON !!!!!!!!!!!!!!".format(self.player_turn))
+            #update state_array
+            one_hot = int_to_binary_rev(self.board[x][y].state, 2) # Return the state as a binary array.
+            for v,value in enumerate(one_hot):
+                index = x*self.dimx*2+y*2+v # [0,1,2] -> [0,0,1,1,2,2]
+                self.state_array[index] = value
+
             self.switch_turn() # We are no longer in play.
         else:
             raise ValueError("Illegal action taken trying to puth piece in field ({},{})".format(x,y))
@@ -225,12 +235,20 @@ class HEX_State(State):
         # State + PID
         # How can we go from an array of dimxdim to dimxdimx2 + 2 ?
         # We need to create a dimxdimx2 array
-        state_array = np.zeros((self.dimx*self.dimy*2))
-        for row in self.board:
-            for cell in row:
-                one_hot = int_to_one_hot_vector(cell.state, 2)
-                #We need to put this into place 
-                pass
+        #state_array = [0 for x in range(self.dimx*self.dimy*2)]
+        state_array = np.zeros((self.dimx*self.dimy*2)).astype(int).tolist() 
+        for x,row in enumerate(self.board):
+            for y,cell in enumerate(row):
+                one_hot = int_to_binary_rev(cell.state, 2) # Return the state as a binary array.
+                for v,value in enumerate(one_hot):
+                    index = x*self.dimx*2+y*2+v # [0,1,2] -> [0,0,1,1,2,2]
+                self.state_array[index] = value
+        #PID =  int_to_binary_rev(self.player_turn, 2)
+        #state_array.extend(PID)
+        return state_array
+    
+    def get_state_as_input(self):
+        return self.state_array
 
     def is_game_over(self): 
         if(self.winner is not None):
@@ -364,7 +382,8 @@ class HEX_State(State):
 class HEX(Game):
     def __init__(self, dim):
         self.state = HEX_State(dim=dim) # Init state for this game.
-        print("Game of HEX with dimentions {} x {}".format(dim,dim))
+        if(variables.verbose >= variables.play):
+            print("Game of HEX with dimentions {} x {}".format(dim,dim))
 
     # ** Play on a copy of current state, return resulting game with new state.
     def play_state(self, action): # Move, should be an index of where to put an block on the board. Assumes the index is empty state.
@@ -381,7 +400,7 @@ class HEX(Game):
         return game
         #Check if current player won based on this.
 
-    def play(self, action):
+    def play(self, action): # ** Play on this state directly. No Copy.
         # We can make a change on the state.
         self.state.change_state(action)
 
@@ -459,7 +478,7 @@ def return_test(x=None):
 
 def cell_test():
     if(return_test([True])):
-        print("True, Trie")
+        print("True, True")
     
     if(return_test()):
         print(", True")

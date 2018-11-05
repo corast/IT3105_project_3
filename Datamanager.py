@@ -9,27 +9,30 @@
 # The PID should be two bits: (1,0) for player 1 and (1,1) for player 2.
 
 import csv # Gives us the oppurtunity to write to an file.
-
-class Dataset():
+#import pandas
+class Datamanager():
     def __init__(self, filepath):
         self.filepath = filepath
     
     # TODO: specify an random amount as cases
     # TODO: use dictionaries instead?
 
-    def read_csv(self,amount=1): # amount is to specify whether or not we want all the file or not.
+    def read_csv(self,header=False,amount=1): # amount is to specify whether or not we want all the file or not.
         # read the content of the csv file.
+        file = []
         with open(self.filepath) as csv_file:
             csv_reader = csv.reader(csv_file,delimiter=",")
 
             line_count = 0
             for row in csv_reader:
-                if(line_count == 0): # Handle header
-                    print("headers: {}".format(row))
+                if(header and line_count == 0): # Handle header
+                    #print("headers: {}".format(row))
                     line_count += 1
                 else:
-                    print(row)
+                    file.append(row)
+                    #print(row)
                 line_count += 1
+        return file
 
     def update_csv(self,mode="a",header=[],data=[[]]): # Data should be an array of arrays, with all the data we need
         # The array must be [[row1],[row2]] etc. not [row1]
@@ -38,21 +41,44 @@ class Dataset():
         with open(self.filepath,mode=mode,newline="") as history_file:
             # Init writer to the file, with dialect
             dataset_writer = csv.writer(history_file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            if(mode == "w"): # We need to write the header aswell.
+            if(len(header) != 0):
                 dataset_writer.writerow(header)
             # Write the actual data.
             for row in data:
-                print(row)
                 dataset_writer.writerow(row)
 
+    def update_csv_limit(self,header=[],data=[[]],limit=1000): 
+        # Update the csv file, but only keep the top 1000 newest examples.
+        # We need to remove from the bottom.
+        if(len(header) != 0):
+            old_data = self.read_csv(header=True)
+        else:
+            old_data = self.read_csv(header=False)
+
+        old_data.extend(data)
+        new_data = old_data
+
+        len_dataset = len(new_data)
+        len_row = len(data[0]) # assume there is something from before.
+
+        if(len_dataset > limit): # If we have more data than we want, remove top rows.
+            amount = len_dataset - limit
+            new_data = new_data[amount:] # We want to only keep from amount and out.
+
+        if(len(header) != 0):
+            self.update_csv(mode="w",header=header,data=new_data)
+        else:
+            self.update_csv(mode="w",data=new_data)
+
+
 def test_dataset_write():
-    dataset = Dataset("Data/dataset.csv")
+    dataset = Datamanager("Data/dataset.csv")
     data = [["0,0,1,0,0,1,0,1,0,1,0,1,1", 2, 0.45],[2, 1, 0.3]]
     header = ["board", "pid", "output"]
     dataset.update_csv(header=header,data=data,mode="w")
 
 def test_dataset_read():
-    dataset = Dataset("Data/dataset.csv")
+    dataset = Datamanager("Data/dataset.csv")
     dataset.read_csv()
 
 #test_dataset_write()

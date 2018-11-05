@@ -6,6 +6,7 @@ import numpy as np
 import variables
 from base.State import *
 from base.Game import *
+import Dataset
 
 class Node():
     def __init__(self, game:Game, parent=None, action=None, node_depth=0):
@@ -60,14 +61,14 @@ class Node():
         if(data): # * If we want to return important information about the child states values, for creating a training case.
             # We should return an array with 25x25 values.
             dimention = self.game.get_dimentions() # Should return two dimentions, x and y.
-            data_visits = np.zeros((dimention[0]*dimention[1])).tolist() # create array to keep states.
+            data_visits = np.zeros((dimention[0]*dimention[1])).astype(int).tolist() # create array to keep states.
             for child in self.children:
                 # We need to get the action, and use it to update the array.
                 action = child.action # Should be a touple for HEX.
                 visits = child.num_visits # What we want to store.
                 data_visits[action[0]*dimention[0]+action[1]] = visits
             print(data_visits)
-            print(self.game.get_legal_actions_bool()) 
+            #print(self.game.get_legal_actions_bool()) 
 
         # * If we have one unexplored node left.
         unexplored = [child for child in self.children if child.num_visits == 0]
