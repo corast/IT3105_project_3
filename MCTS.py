@@ -62,11 +62,7 @@ class MCTS():
             if(variables.verbose >= variables.play): #if we want to display the turns of the real game.
                 if(variables.verbose >= variables.debug):
                     victor.show_tree(100)
-                #We know the action that the current player took, and the next state we are in.
-                #print("victor",victor, victor.game.get_current_state())
-                #print(type(victor))
-                #print(victor.parent, victor.children)
-                #victor.show_tree(100)
+                    
                 if(variables.verbose >= variables.play):
                     victor.game.display_turn(victor.action) # Display what happened to get to this state.
                     victor.game.display_board()

@@ -6,7 +6,7 @@ import numpy as np
 import variables
 from base.State import *
 from base.Game import *
-import Dataset
+import Datamanager
 
 class Node():
     def __init__(self, game:Game, parent=None, action=None, node_depth=0):

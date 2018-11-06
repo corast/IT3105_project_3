@@ -20,4 +20,17 @@ class Module(nn.Module):
         return x # Return output, whatever it is.
 
 
+
+class policy():
+    #This class is responsible for the rollout from the network.
+    #It will be using the pre-trained neural network from different time instancess
+
+    def __init__(self):
+        pass
+
+    def act(self):
+        # Take an input and run it into the network, and output an action.
+
+        pass
+
 # The network should have 5x5 inputs + an player id (one_hot vector)
