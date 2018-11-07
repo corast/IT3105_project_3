@@ -1,16 +1,21 @@
 from Node import *
 from NIM import NIM
+from Datamanager import Datamanager # For saving cases.
 import variables
 #from variables import *
 import copy
 
 class MCTS():
-    def __init__(self, node:Node, memory_state = 1):
+    def __init__(self, node:Node, action="play", filepath=None, memory_state = 1):
         self.root = node # Set root node of MCTS
             #TODO: use memory states, intra episode or not
         self.memory_state = memory_state # How whether or not we want to keep memory in simulation.
         # 1 - means we don't store anything between inter-episodes.
         # 2 - means we store intra-episode tree.
+        if(filepath is not None): # Dont need an datamanger if no file to manage.
+            self.datamanager = Datamanager(filepath=filepath)
+
+        #TODO: change policy to only use a network when needed.
 
     def tree_policy(self, node, root_player): #The policy which we choose the node(Leaf) to rollout.  i.e. Tree Search
         """ Return node which has not been visited, or the node showing the most promise(or leaf). """
@@ -42,7 +47,7 @@ class MCTS():
         # TODO: handle creating the case from simulation results. i.e. get number of visits to each node.
         # * [(0,0)=3,(0,1)=1,(0,2)=40,..., PID]
         # We need to create a seperate node.best_child function for when we actually selects a move, since we might want to get the data aswell.
-        victor = (node.best_child(root_player, c=0, action=True,data=True)) # Get best state node from tree.
+        victor,PID,data_input,data_target = node.get_best_child(root_player, data=True) # Get best state node from tree.
         return victor
 
         #return node.best_child(node.game.get_current_player()).action # After we are done, we select best action from parent.
@@ -68,8 +73,7 @@ class MCTS():
                     victor.game.display_board()
         return node # return termal node, which is the final state of our game.
 
-        #TODO: had self.root.is_termal_node(), and self.root = Node(game=new_state.game,parent=self.root, action=new_state.action, node_depth=new_state.node_depth)
-    # ! check if this is correct, by playing in batch mode, with perfect initial position. 
+    #TODO: had self.root.is_termal_node(), and self.root = Node(game=new_state.game,parent=self.root, action=new_state.action, node_depth=new_state.node_depth)
     def play_batch(self, num_sims, batch, start_player=1):
         if(start_player < 1 or start_player > 3):
             raise ValueError('Value of {} as P is not supported'.format(start_player))
@@ -101,37 +105,6 @@ class MCTS():
             print("Results {} games: Player_1: {:.2f}%({}), Player_2: {:.2f}% ({})".format(batch, p_p1*100, wins[0], p_p2*100, wins[1]))
         # Player turn should be P.
         # We need to create new games of nim for each starting player.
-
-def test_game():
-    game = NIM(num_pieces=15, max_pieces=3)
-    root = Node(game=game) # root with game we want to play
-    mcts = MCTS(node=root) 
-    variables.verbose = 2
-    node = mcts.play_full_game(root_node=root,num_sims=3000)
-    #node.show_tree()
-    #print(node)
-
-def test_batch():
-    game = NIM(num_pieces=9, max_pieces=3)
-    root = Node(game=game) # root with game we want to play
-    mcts = MCTS(node=root) # create MCTS alg object.
-    mcts.play_batch(batch=10,num_sims=2000,start_player=1)
-
-def testMCTS():
-    #game2 = NIM(num_pieces=10, max_pieces=3)
-    game = NIM(num_pieces=5, max_pieces=3)
-    print(type(game))
-    root = Node(game) # root with game we want to play
-
-    mcts = MCTS(node=root)
-
-    next_state = mcts.simulate_best_action(node=mcts.root,num_sims=30)
-    print(type(next_state), next_state)
-    print(next_state)
-    #mcts.show_tree()
-#test_batch()
-#test_game()
-#testMCTS()
 """ 
     * Backprogagate
     def backpropagation(self, node): # Backpropagation - Passing the evaluation of a final state back up the tree, 

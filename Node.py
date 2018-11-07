@@ -7,8 +7,14 @@ import variables
 from base.State import *
 from base.Game import *
 import Datamanager
+import misc
+
+#TODO: Import policy to use with rollout.
 
 class Node():
+
+    #datamanager = Datamanager.Datamanager("Data/dataset.csv")
+
     def __init__(self, game:Game, parent=None, action=None, node_depth=0):
         self.game = game # How we move from one state to the next, by playing at a specific state.
         self.parent = parent # Parent is None for root node.
@@ -44,7 +50,7 @@ class Node():
 
     # ****** SELECT FUNCTION
 
-    def best_child(self, root_player, c=2, action=False, data=False): # Return best child from a parent node 
+    def best_child(self, root_player, c=2, data=False): # Return best child from a parent node 
         # need to check children to self, and pick the action which has the best value / Visits.
         # Must handle children that has not been visited yet
         # create a list of every child which has not been explored
@@ -57,7 +63,18 @@ class Node():
             return self.children[np.argmax(choices)]
         """
         #TODO: handle creating a case from the child values. Number of visits, when requested by the actual game. 
+        # * If we have one unexplored node left.
+        unexplored = [child for child in self.children if child.num_visits == 0]
+        if(len(unexplored) != 0):
+            return np.random.choice(unexplored) # Randomly choose from unvisited nodes.
+        # * Select child with best score
+        choices = [self.get_score(child, c) for child in self.children] # Get score from each child node.
+        return self.children[np.argmax(choices)] # Select index of best child.
+        #return self.children[np.argmin(choices)] # else we want to minimize winning (i.e. we are not rewarded from winning)    
 
+    def get_best_child(self, c=0 ,data=False): # What we use to 
+        
+        choices = [self.get_score(child, c) for child in self.children] # Get score from each child node.
         if(data): # * If we want to return important information about the child states values, for creating a training case.
             # We should return an array with 25x25 values.
             dimention = self.game.get_dimentions() # Should return two dimentions, x and y.
@@ -67,17 +84,15 @@ class Node():
                 action = child.action # Should be a touple for HEX.
                 visits = child.num_visits # What we want to store.
                 data_visits[action[0]*dimention[0]+action[1]] = visits
-            print(data_visits)
-            #print(self.game.get_legal_actions_bool()) 
 
-        # * If we have one unexplored node left.
-        unexplored = [child for child in self.children if child.num_visits == 0]
-        if(len(unexplored) != 0):
-            return np.random.choice(unexplored) # Randomly choose from unvisited nodes.
+            PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
+            data_input = self.game.get_state_as_input()
+            data_target = misc.normalize_array(data_visits)
+            # We need to return this data aswell.
+            return self.children[np.argmax(choices)], PID, data_input, data_target
+
         # * Select child with best score
-        choices = [self.get_score(child, c) for child in self.children] # Get score from each child node.
         return self.children[np.argmax(choices)] # Select index of best child.
-        #return self.children[np.argmin(choices)] # else we want to minimize winning (i.e. we are not rewarded from winning)    
 
     # ***** EXPAND FUNCTIONS
 

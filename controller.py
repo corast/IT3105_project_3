@@ -62,6 +62,10 @@ if __name__=="__main__":
                         type=check_positive, required=True)
     parser.add_argument("-b","--batch",help="number of games we play", default=1,
                     type=check_positive)
+    
+    parser.add_argument("-a","--action", default="train", choices=["train","play","play_tourn","test"],
+                        required=True, type=str) 
+
     subparsers = parser.add_subparsers(title="game", dest="game",help="sub-game help"
                     ,required=True)
     

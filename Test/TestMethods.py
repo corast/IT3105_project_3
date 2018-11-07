@@ -30,6 +30,10 @@ class TestMics(unittest.TestCase):
             misc.int_to_binary_rev(2,1)
         #self.assertRaises(ValueError, misc.int_to_binary(2,1)) # Doest work
 
+    def test_normalize_array(self):
+        self.assertListEqual(misc.normalize_array([0,1,2,0]),[0,1/2,2/2,0])
+        self.assertListEqual(misc.normalize_array([0,1,200,100]),[0,1/200,200/200,100/200])
+
 class TestHEX(unittest.TestCase):
     def test_board_to_nn_input(self):
         hex = HEX.HEX(2) # Init game with 4 pieces

@@ -59,6 +59,7 @@ class Datamanager():
     def update_csv_limit(self,header=[],data=[[]],limit=1000): 
         # Update the csv file, but only keep the top 1000 newest examples.
         # We need to remove from the bottom.
+        #TODO: normalize the target function
         if(len(header) != 0):
             old_data = self.read_csv(header=True)
         else:
