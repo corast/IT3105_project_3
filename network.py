@@ -2,22 +2,86 @@
 import torch
 import torch.nn as nn # neural netork modules
 import torch.nn.functional as F # optimizer
-
+import torch.optim as optim
+import os
+import numpy as np
 from IPython.core.debugger import set_trace
 
+torch.manual_seed(2809)
+np.random.seed(2809)
+
 class Module(nn.Module):
-    def __init__(self): # Define the network in detail
-        super().__init__()
-        self.inL = nn.Linear(25+2,40)
-        self.outL = nn.Linear(40,25) # output is only a board state.
+
+    def __init__(self,insize = 27,outsize = 25): # Define the network in detail
+        super().__init__() # Dunno
+        self.inL = nn.Linear(insize,40)
+        self.drop1 = nn.Dropout(p=0.5)
+        self.hL = nn.Linear(40,outsize)
+
+        #self.outL = nn.Softmax(outsize) # output is only a board state.
 
 
     def forward(self, input):
         # set_trace() # debugging
         x = self.inL(input) # put input in input layer
-        x = self.outL(x)
-
+        x = F.relu(x) # output activation.
+        x = self.drop1(x)
+        x = self.hL(x)
+        x = F.relu(x)
+        x = F.log_softmax(x, dim=1)
         return x # Return output, whatever it is.
+
+def weights_init(self, model): # Will reset states if called again.
+        if isinstance(model, nn.Linear):
+            model.weights.data.fill_(1.0)
+            model.bias.data.zero_() # Bias is set to
+
+def train(model, optimizer, criterion,x,y):
+    optimizer.zero_grad()
+    output = model(x)
+    loss = criterion(output,y)
+    loss.backward()
+    optimizer.step()
+    return loss.data[0]
+
+def save_checkpoint(state, filename="models/checkpoint.pth.tar"): #Save as .tar file
+    torch.save(state, filename)
+
+def load_checkpoint(model, optimizer, losslogger, filename="models/checkpoint.pth.tar"):
+    start_epoch = 0
+    if os.path.isfile(filename):
+        print("=> loading checkpoint '{}'".format(filename))
+        checkpoint = torch.load(filename)
+        start_epoch = checkpoint['epoch']
+        model.load_state_dict(checkpoint['optimizer'])
+        losslogger = checkpoint['losslogger']
+        print("=> loaded checkpoint '{}' (epoch {})".format(filename,start_epoch))
+    else:
+        print(" => no checkpoint found at '{}'".format(filename))
+
+
+
+
+checkpoint_path = "models/checkpoint.pth.tar"
+model = Module(25*2 + 2,25)
+model.apply(weights_init) # initialize weights to random, with bias set to 0.
+optimizer = optim.Adam(model.parameters(),
+                        lr=5e-4,betas=(0.9,0.999),eps=1e-08,weight_decay=1e-4)
+
+criterion = nn.NLLLoss()
+#criterion = nn.CrossEntropyLoss()
+save_checkpoint(state= {
+    'epoch':epoch + 1, # We want to start from another epoch.
+    'arch':args.arch,
+    "state_dict":model.state_dict(),
+    "best_prec1":best_prec1,
+    "optimizer":optimizer.state_dict(),
+    },filename=checkpoint_path)
+
+
+def store(self):
+    #Store ourself in a file for later use
+    pass
 
 
 
