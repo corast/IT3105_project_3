@@ -31,17 +31,34 @@ class Module(nn.Module):
         x = F.log_softmax(x, dim=1)
         return x # Return output, whatever it is.
 
-def weights_init(self, model): # Will reset states if called again.
-        if isinstance(model, nn.Linear):
-            model.weights.data.fill_(1.0)
-            model.bias.data.zero_() # Bias is set to
 
-def train(model, optimizer, criterion,x,y):
+def weights_init(model): # Will reset states if called again.
+    if isinstance(model, nn.Linear):
+        model.weights.data.fill_(1.0)
+        model.bias.data.zero_() # Bias is set to
+
+def train(train_loader, model, optimizer, loss_function,gpu=False):
+    #train_loder is a training row,
+    # Switch to training mode
+    model.train()
+
+    end = time.time()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    module.to(device) # Put model on the specified device.
+    for i,(input, target) in enumerate(train_loader): # 
+        data_time.update(time.time() - end)
+
+        if args.gpu is not None:
+            input = input.cuda(args.gpu, non_blocking=True)
+        target = target.cuda(args.gpu, non_blocking=True)
+
     optimizer.zero_grad()
     output = model(x)
-    loss = criterion(output,y)
+    loss = loss_function(output,y)
     loss.backward()
     optimizer.step()
+    
+
     return loss.data[0]
 
 def save_checkpoint(state, filename="models/checkpoint.pth.tar"): #Save as .tar file
@@ -68,16 +85,17 @@ model.apply(weights_init) # initialize weights to random, with bias set to 0.
 optimizer = optim.Adam(model.parameters(),
                         lr=5e-4,betas=(0.9,0.999),eps=1e-08,weight_decay=1e-4)
 
-criterion = nn.NLLLoss()
+loss_function = nn.NLLLoss()
 #criterion = nn.CrossEntropyLoss()
 save_checkpoint(state= {
     'epoch':epoch + 1, # We want to start from another epoch.
-    'arch':args.arch,
+    'arch':arch,
     "state_dict":model.state_dict(),
-    "best_prec1":best_prec1,
     "optimizer":optimizer.state_dict(),
     },filename=checkpoint_path)
 
+
+checkpoint = torch.load(checkpoint_path)
 
 def store(self):
     #Store ourself in a file for later use
@@ -85,7 +103,7 @@ def store(self):
 
 
 
-class policy():
+class module_handler():
     #This class is responsible for the rollout from the network.
     #It will be using the pre-trained neural network from different time instancess
 
@@ -94,7 +112,4 @@ class policy():
 
     def act(self):
         # Take an input and run it into the network, and output an action.
-
         pass
-
-# The network should have 5x5 inputs + an player id (one_hot vector)
