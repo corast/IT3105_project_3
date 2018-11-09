@@ -110,7 +110,7 @@ if __name__=="__main__":
 
     if(game is not None):
         root = Node(game) # Init root node from game state.
-        mcts = MCTS(node=root, filepath="Data/data_random.csv") 
+        mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_random.csv", dim=args.dimentions)) 
         #mcts.simulate_best_action(root,10)
         mcts.play_batch(batch=args.batch,num_sims=args.num_sims,start_player=args.start_player)
     else:

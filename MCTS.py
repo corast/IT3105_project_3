@@ -7,19 +7,19 @@ import copy
 
 
 class MCTS():
-    def __init__(self, node:Node, action=1, filepath=None, rollout_policy=None):
+    def __init__(self, node:Node, action=1, datamanager=None, rollout_policy=None):
         self.root = node # Set root node of MCTS
             #TODO: use memory states, intra episode or not
         #self.memory_state = memory_state # How whether or not we want to keep memory in simulation.
         self.action = action # {1:play, 2:play_tourn, 3:train, 4:data,5:test}
-        self.rollout_policy = rollout_policy #{1:random, 2:ANET}
+        self.rollout_policy = rollout_policy
         #TODO: handle multiple policies between players.
         # 1 - means we don't store anything between inter-episodes.
         # 2 - means we store intra-episode tree.
-        if(filepath is not None): # Dont need an datamanger if no file to manage.
-            self.datamanager = Datamanager(filepath=filepath)
+        if(datamanager is not None): # Dont need an datamanger if no file to manage.
+            self.datamanager = datamanager
         else:
-            raise ValueError("Request a filepath to store the data..")
+            raise ValueError("Requires a datamanager to store the data..")
 
         #TODO: change policy to only use a network when needed.
 
@@ -48,7 +48,7 @@ class MCTS():
                 winner = leaf.rollout(root_player)
             else: # We want to use another policy for rollout.
                 #TODO: pass the policy to the rollout function.
-                winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
+                winner = leaf.rollout(root_player, self.rollout_policy) # Rollout from this node, and get the reward from this stage. 
             #print("leaf", leaf, leaf.game)
             # Victor is the node in the whole simulated tree that is considered best.
             winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
@@ -59,10 +59,10 @@ class MCTS():
         # TODO: handle creating the case from simulation results. i.e. get number of visits to each node.
         # * [(0,0)=3,(0,1)=1,(0,2)=40,..., PID]
         # We need to create a seperate node.best_child function for when we actually selects a move, since we might want to get the data aswell.
-        if(self.action.__("data")):
-            victor,PID,data_input,data_target = node.get_best_child(root_player, data=True) # Get best state node from tree.
+        if(self.action == variables.action.get("data")):
+            victor,data = node.get_best_child(root_player, data=True) # Get best state node from tree.
             #Store the data.
-            self.datamanager.update_csv([data_input, PID, data_target])
+            self.datamanager.update_csv(data = [data])
         victor = node.get_best_child(root_player) # Get best state node from tree.
         return victor
 

@@ -31,8 +31,10 @@ class TestMics(unittest.TestCase):
         #self.assertRaises(ValueError, misc.int_to_binary(2,1)) # Doest work
 
     def test_normalize_array(self):
-        self.assertListEqual(misc.normalize_array([0,1,2,0]),[0,1/2,2/2,0])
-        self.assertListEqual(misc.normalize_array([0,1,200,100]),[0,1/200,200/200,100/200])
+        self.assertAlmostEqual(misc.normalize_array([0,1,2,0]),[0,1/3,2/3,0])
+        self.assertAlmostEqual(sum(misc.normalize_array([0,1,2,0])),1.00)
+        self.assertListEqual(misc.normalize_array([0,1,200,100]),[0,1/301,200/301,100/301])
+        self.assertAlmostEqual(sum(misc.normalize_array([0,1,200,100])),1.00)
 
 class TestHEX(unittest.TestCase):
     def test_board_to_nn_input(self):

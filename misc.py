@@ -33,12 +33,18 @@ def int_to_binary_rev(value,size=2):
     v.reverse()
     return v
 
-def normalize_array(data):
+def normalize_array(data, x_min=1):
     """ 
         min_max scaling: x_i = x_i-min(x)/(max(x) - min(x)) 
         z-score : x = x_i - sd/mean(data) 
     """
+    #x_max = max(data)    
+    #x_min = min(data)
+    #data = [(x-x_min)/(x_max-x_min) for x in data]
+    mean = sum(data)
+    return [x/mean for x in data]
+
+def min_max_scaling(data):
     x_max = max(data)    
     x_min = min(data)
-    data = [(x-x_min)/(x_max-x_min) for x in data]
-    return data
+    return [(x-x_min)/(x_max-x_min) for x in data]

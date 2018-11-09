@@ -87,9 +87,10 @@ class Node():
 
             PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
             data_input = self.game.get_state_as_input()
+            #data_input.extend(0,PID)
             data_target = misc.normalize_array(data_visits)
             # We need to return this data aswell.
-            return self.children[np.argmax(choices)], PID, data_input, data_target
+            return self.children[np.argmax(choices)], PID + data_input + data_target
 
         # * Select child with best score
         return self.children[np.argmax(choices)] # Select index of best child.

@@ -6,6 +6,7 @@ import torch.optim as optim
 import os
 import numpy as np
 from IPython.core.debugger import set_trace
+import time
 
 torch.manual_seed(2809)
 np.random.seed(2809)
@@ -42,23 +43,25 @@ def train(train_loader, model, optimizer, loss_function,gpu=False):
     # Switch to training mode
     model.train()
 
-    end = time.time()
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    module.to(device) # Put model on the specified device.
-    for i,(input, target) in enumerate(train_loader): # 
-        data_time.update(time.time() - end)
+    start = time.time()
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #module.to(device) # Put model on the specified device. 
+    train_loader.getBatch()
 
-        if args.gpu is not None:
-            input = input.cuda(args.gpu, non_blocking=True)
-        target = target.cuda(args.gpu, non_blocking=True)
+    for i,(input, target) in enumerate(train_loader): # 
+        #TODO: batch x and y
+        #data_time.update(time.time() - end)
+        y_pred = model(x)
+
+        #x = model(y)
+
+        loss = loss_function(y_pred,y) 
 
     optimizer.zero_grad()
     output = model(x)
     loss = loss_function(output,y)
     loss.backward()
     optimizer.step()
-    
-
     return loss.data[0]
 
 def save_checkpoint(state, filename="models/checkpoint.pth.tar"): #Save as .tar file

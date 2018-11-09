@@ -12,8 +12,9 @@ import csv # Gives us the oppurtunity to write to an file.
 import numpy as np
 #import pandas
 class Datamanager():
-    def __init__(self, filepath):
+    def __init__(self, filepath, dim):
         self.filepath = filepath
+        self.inputs = 2+dim*dim
     
     # TODO: specify an random amount as cases
     # TODO: use dictionaries instead?
@@ -35,19 +36,11 @@ class Datamanager():
                 line_count += 1
         return file
 
-    def read_random(self, amount=1): # TODO: handle training_test set.
-        """ Return random x shufled amount of rows from csv file """
-        data = self.read_csv() # read everything.
-        tot_size = len(data)
-        num = self.return_num(amount,tot_size)
-        # TODO: handle cases, like casemanager...
-
-
     def update_csv(self,mode="a",header=[],data=[[]]): # Data should be an array of arrays, with all the data we need
         # The array must be [[row1],[row2]] etc. not [row1]
         # []
         # Mode specify if we want to replace the file with data parameter, or append new data.
-        with open(self.filepath,mode=mode,newline="") as history_file:
+        with open(self.filepath, mode=mode, newline="") as history_file:
             # Init writer to the file, with dialect
             dataset_writer = csv.writer(history_file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
             if(len(header) != 0):
@@ -79,6 +72,9 @@ class Datamanager():
             self.update_csv(mode="w",header=header,data=new_data)
         else:
             self.update_csv(mode="w",data=new_data)
+
+    def update_buffer(self):
+        pass
     
     def return_num(self, num, tot_size):
         """ Return number of cases we want to keep. """
@@ -96,15 +92,47 @@ class Datamanager():
             return num
         return tot_size # Know we want all cases.
 
+    def return_batch(self, batch_size): # Return tensor with batch_size from file.
+        data = self.read_csv()
+        tot_size = len(data) # Number of cases we got.
+        # Num, is the amount of data we send back.
+        num = self.return_num(batch_size, tot_size)
 
-def test_dataset_write():
-    dataset = Datamanager("Data/dataset.csv")
-    data = [["0,0,1,0,0,1,0,1,0,1,0,1,1", 2, 0.45],[2, 1, 0.3]]
-    header = ["board", "pid", "output"]
-    dataset.update_csv(header=header,data=data,mode="w")
+        if(tot_size > 0):
+            for i, row in enumerate(data):
+                data[i] = list(map(float, row))
+                input = data[i][:self.inputs]
+                targets = data[i][self.inputs:]
+                data[i] = [input,targets]
+            print(data)
+    
+        # Create tensors.
 
-def test_dataset_read():
-    dataset = Datamanager("Data/dataset.csv")
-    dataset.read_csv()
+
+        #print(data[0])
+        #row0 = data[0]
+        #row0 = [x.split('"') for x in row0][0] # from list of strings to list of lists.
+        #We need to translate list of strings to list of ints.
+        #print(row0)
+        #row = []
+        #for data in row0:
+        #    print(type(data))
+        #    print(data)
+            #row.append(list(map(int, data)))
+            #row.append(list(map(int, x) for x in data))
+
+
+
+        #row0 = list([map(int,x) for x in row0])
+        #row0 = [ for x in row0]
+        #print(type(row0[0]),type(row0[0][0]))
+        #row0 = list(map(int,row0[0]))
+        #print(row0,type(row0)
+
+def test_return_batch():
+    dataset = Datamanager("Data/data_r_test.csv",5)
+    dataset.return_batch(10)
+
+test_return_batch()
 
 #test_dataset_write()
