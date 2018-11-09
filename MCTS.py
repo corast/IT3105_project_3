@@ -5,15 +5,21 @@ import variables
 #from variables import *
 import copy
 
+
 class MCTS():
-    def __init__(self, node:Node, action="play", filepath=None, memory_state = 1):
+    def __init__(self, node:Node, action=1, filepath=None, rollout_policy=None):
         self.root = node # Set root node of MCTS
             #TODO: use memory states, intra episode or not
-        self.memory_state = memory_state # How whether or not we want to keep memory in simulation.
+        #self.memory_state = memory_state # How whether or not we want to keep memory in simulation.
+        self.action = action # {1:play, 2:play_tourn, 3:train, 4:data,5:test}
+        self.rollout_policy = rollout_policy #{1:random, 2:ANET}
+        #TODO: handle multiple policies between players.
         # 1 - means we don't store anything between inter-episodes.
         # 2 - means we store intra-episode tree.
         if(filepath is not None): # Dont need an datamanger if no file to manage.
             self.datamanager = Datamanager(filepath=filepath)
+        else:
+            raise ValueError("Request a filepath to store the data..")
 
         #TODO: change policy to only use a network when needed.
 
@@ -38,16 +44,26 @@ class MCTS():
         root_player = node.game.get_current_player() # Seperate simulation vs real game.
         for i in range(0, num_sims): # M = num_sims    
             leaf = self.tree_policy(node, root_player) # Return leaf node we are going to use for rollout from node state.
-            
+            if(self.rollout_policy is None): # Check if we only want the data.
+                winner = leaf.rollout(root_player)
+            else: # We want to use another policy for rollout.
+                #TODO: pass the policy to the rollout function.
+                winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
             #print("leaf", leaf, leaf.game)
             # Victor is the node in the whole simulated tree that is considered best.
             winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
+            # TODO: send network with backpropogate function.
+
             leaf.backpropagate(winner, root_player) # Go from leaf node and update the values
                         # c = 2, too high exploration, we might actually try to explore more than guarantee winning.
         # TODO: handle creating the case from simulation results. i.e. get number of visits to each node.
         # * [(0,0)=3,(0,1)=1,(0,2)=40,..., PID]
         # We need to create a seperate node.best_child function for when we actually selects a move, since we might want to get the data aswell.
-        victor,PID,data_input,data_target = node.get_best_child(root_player, data=True) # Get best state node from tree.
+        if(self.action.__("data")):
+            victor,PID,data_input,data_target = node.get_best_child(root_player, data=True) # Get best state node from tree.
+            #Store the data.
+            self.datamanager.update_csv([data_input, PID, data_target])
+        victor = node.get_best_child(root_player) # Get best state node from tree.
         return victor
 
         #return node.best_child(node.game.get_current_player()).action # After we are done, we select best action from parent.

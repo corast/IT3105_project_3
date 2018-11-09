@@ -63,8 +63,11 @@ if __name__=="__main__":
     parser.add_argument("-b","--batch",help="number of games we play", default=1,
                     type=check_positive)
     
-    parser.add_argument("-a","--action", default="train", choices=["train","play","play_tourn","test"],
+    parser.add_argument("-a","--action", choices=["train","play","play_tourn","test","data"],
                         required=True, type=str) 
+
+    parser.add_argument("-r","--rollout",choices=["random","ANET"],
+                        default = "random", required=True) 
 
     subparsers = parser.add_subparsers(title="game", dest="game",help="sub-game help"
                     ,required=True)
@@ -98,12 +101,17 @@ if __name__=="__main__":
         game = play_nim(max_pieces=args.max_pieces, num_pieces=args.num_pieces)
     elif(args.game == "HEX"):
         game = play_hex(dim=args.dimentions)
-        pass
+
+    # Handle action arg
+    action = variables.action.get(args.action) # None is default in our case.
+    rollout = variables.rollout_policy.get(args.rollout)
+    if(action is None):
+        raise ValueError("No action selected")
 
     if(game is not None):
         root = Node(game) # Init root node from game state.
-        mcts = MCTS(node=root) 
+        mcts = MCTS(node=root, filepath="Data/data_random.csv") 
         #mcts.simulate_best_action(root,10)
         mcts.play_batch(batch=args.batch,num_sims=args.num_sims,start_player=args.start_player)
     else:
-        raise ValueError("No game instanceiated")
+        raise ValueError("No game initiated")
