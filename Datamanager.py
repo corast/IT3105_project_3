@@ -10,6 +10,8 @@
 
 import csv # Gives us the oppurtunity to write to an file.
 import numpy as np
+import random
+import torch
 #import pandas
 class Datamanager():
     def __init__(self, filepath, dim):
@@ -93,46 +95,35 @@ class Datamanager():
         return tot_size # Know we want all cases.
 
     def return_batch(self, batch_size): # Return tensor with batch_size from file.
+        """ Return two tensors(inputs, targets) of size batch_size from bufferfile"""
         data = self.read_csv()
         tot_size = len(data) # Number of cases we got.
         # Num, is the amount of data we send back.
         num = self.return_num(batch_size, tot_size)
+        if(tot_size == 0):
+            raise ValueError("No cases availible in file")
+        
+        # Randomly select num unique cases
+        data = random.sample(data, num) # We don't care about testing or validation at this stage
 
-        if(tot_size > 0):
-            for i, row in enumerate(data):
-                data[i] = list(map(float, row))
-                input = data[i][:self.inputs]
-                targets = data[i][self.inputs:]
-                data[i] = [input,targets]
-            print(data)
-    
-        # Create tensors.
+        targets = []
+        for i, row in enumerate(data):
+            data[i] = list(map(float, row))
+            inputs = data[i][:self.inputs]
+            target = data[i][self.inputs:]
+            # We need to seperate input and target into two seperate lists
+            data[i] = inputs
+            targets.append(target)
+        inputs = data
 
+        t_inputs = torch.from_numpy(np.array(inputs)).float()
+        t_targets = torch.from_numpy(np.array(targets)).long()
 
-        #print(data[0])
-        #row0 = data[0]
-        #row0 = [x.split('"') for x in row0][0] # from list of strings to list of lists.
-        #We need to translate list of strings to list of ints.
-        #print(row0)
-        #row = []
-        #for data in row0:
-        #    print(type(data))
-        #    print(data)
-            #row.append(list(map(int, data)))
-            #row.append(list(map(int, x) for x in data))
+        return t_inputs, t_targets
 
-
-
-        #row0 = list([map(int,x) for x in row0])
-        #row0 = [ for x in row0]
-        #print(type(row0[0]),type(row0[0][0]))
-        #row0 = list(map(int,row0[0]))
-        #print(row0,type(row0)
 
 def test_return_batch():
-    dataset = Datamanager("Data/data_r_test.csv",5)
+    dataset = Datamanager.Datamanager("Data/data_r_test.csv",5)
     dataset.return_batch(10)
-
-test_return_batch()
 
 #test_dataset_write()

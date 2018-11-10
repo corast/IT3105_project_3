@@ -73,6 +73,7 @@ class Node():
         #return self.children[np.argmin(choices)] # else we want to minimize winning (i.e. we are not rewarded from winning)    
 
     def get_best_child(self, c=0 ,data=False): # What we use to 
+        #TODO: handle not every child being visited.
         
         choices = [self.get_score(child, c) for child in self.children] # Get score from each child node.
         if(data): # * If we want to return important information about the child states values, for creating a training case.
