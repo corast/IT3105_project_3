@@ -115,3 +115,35 @@ if __name__=="__main__":
         mcts.play_batch(batch=args.batch,num_sims=args.num_sims,start_player=args.start_player)
     else:
         raise ValueError("No game initiated")
+
+
+# QA 
+#   Don't use whole buffer. Will simply make it harder to adjust to new players.
+#   
+#    Good w/r against random. 200 episodes, beats 2/3 games. 66% is relativly well.
+#       Along as it seems to be winning, it's probally in good shape.
+#    Start player should win most of the time.
+#   
+#   Network Architecture:
+#       Not very deep. Keiths's, 50, 50, 25, output.
+# Alpha go. input state player, one. Expansion code (player has huge effect on game).
+#   Conv, don't usually needed on small games like this (5x5), defently on 10x10 board game.
+#   
+#   Interface, can test as much as possible. One minute limit.
+#       Tournament, a bit faster.
+
+#   Must do rollouts, but not in tournament.
+
+#    Different strategies. Rollout strategy don't necessary be greedy.
+#      Stochasticly choose the probability of the network. actio1 0.9 percentage, 9/10 times.
+#    In tourn, we might not want to explore as much as during tournament. Epsilon. 
+#   
+#    One of the players will be random in the tornament.
+#
+#    Drawback of Relu, might give us an zero as output (Negative input).
+#   
+#   How many MCTS per move, ideely 1000 per move. Beginning, we don't need to call as often. 
+#   Maby do as many rollouts as we have time for.
+#   Rollouts in the beginning, not very usefull anyway.
+
+#   Values in distrubution, visits are effected by wins, so should work.
