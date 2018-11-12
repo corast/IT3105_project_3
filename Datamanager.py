@@ -14,9 +14,10 @@ import random
 import torch
 #import pandas
 class Datamanager():
-    def __init__(self, filepath, dim):
+    def __init__(self, filepath, dim=5):
         self.filepath = filepath
-        self.inputs = 2+dim*dim
+        self.inputs = 2+dim*dim*2
+        self.outputs = dim*dim
     
     # TODO: specify an random amount as cases
     # TODO: use dictionaries instead?
@@ -81,7 +82,7 @@ class Datamanager():
     def return_num(self, num, tot_size):
         """ Return number of cases we want to keep. """
         # Either a fraction, all cases or a specific number.
-        if(num != 1):
+        if(num != "all"):
             #check if an integer of a float.
             if(type(num) == float):  # if float
                 if(num > 1):
@@ -115,7 +116,7 @@ class Datamanager():
             data[i] = inputs
             targets.append(target)
         inputs = data
-
+        #print("targets",targets)
         t_inputs = torch.from_numpy(np.array(inputs)).float()
         t_targets = torch.from_numpy(np.array(targets)).long()
 
@@ -123,7 +124,7 @@ class Datamanager():
 
 
 def test_return_batch():
-    dataset = Datamanager.Datamanager("Data/data_r_test.csv",5)
+    dataset = Datamanager("Data/data_r_test.csv",5)
     dataset.return_batch(10)
 
 #test_dataset_write()

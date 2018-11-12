@@ -16,9 +16,12 @@ class Module(nn.Module):
 
     def __init__(self,insize = 27,outsize = 25): # Define the network in detail
         super().__init__() # Dunno
-        self.inL = nn.Linear(insize,40)
-        self.drop1 = nn.Dropout(p=0.5)
-        self.hL = nn.Linear(40,outsize)
+        self.outsize = outsize
+        self.insize = insize
+
+        self.inL = nn.Linear(insize,60)
+        #self.drop1 = nn.Dropout(p=0.5)
+        self.hL = nn.Linear(60,outsize)
 
         #self.outL = nn.Softmax(outsize) # output is only a board state.
 
@@ -26,10 +29,10 @@ class Module(nn.Module):
         # set_trace() # debugging
         x = self.inL(input) # put input in input layer
         x = F.relu(x) # output activation.
-        x = self.drop1(x)
+        #x = self.drop1(x)
         x = self.hL(x)
         x = F.relu(x)
-        x = F.log_softmax(x, dim=1)
+        x = F.log_softmax(x,dim=1)
         return x # Return output, whatever it is.
     
     def store(self):
@@ -42,36 +45,45 @@ def weights_init(model): # Will reset states if called again.
         model.weights.data.fill_(1.0)
         model.bias.data.zero_() # Bias is set to
 
-def train(casemanager:Datamanager, model, optimizer, loss_function, iterations, batch, gpu=False):
+def train(casemanager_train:Datamanager,casemanager_test:Datamanager, model, optimizer, loss_function, iterations, batch, gpu=False):
     #train_loder is a training row,
-    # Switch to training mode
-    model.train()
 
     start = time.time()
     #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     #module.to(device) # Put model on the specified device. 
 
-    for t in range(iterations): #
-        #TODO: batch x and y
-        #data_time.update(time.time() - end)
-        x,y = casemanager.return_batch(10)# 10 training cases
+    for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
+        #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
+        loss_train = train_batch(casemanager_train, model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
+        loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
+        print(t, loss_train, loss_test)
 
-        y_pred = model(x)
 
-        #x = model(y)
-
-        loss = loss_function(y_pred,y) 
-        print(t, loss.item())
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    #optimizer.zero_grad()
-    #output = model(x)
-    #loss = loss_function(output,y)
+def train_batch(casemanager:Datamanager, model, optimizer, loss_function, batch):
+    # Switch to training mode
+    model.train()
+    x,y = casemanager.return_batch(batch)# 10 training cases
+    y_pred = model(x)
+    loss = loss_function(y_pred,y) 
+    #print(t, loss.item())
+    optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    return loss.data[0]
+    return loss.item()
+
+def evaluate(casemanager:Datamanager, model, loss_function):
+    model.eval()
+    with torch.no_grad(): # Turn off gradient calculation requirements, faster.
+        data,target = casemanager.return_batch("all")
+        size = data.shape[0]
+        prediction = model(data)
+        return loss_function(prediction,target).item() # Get loss value.
+    if(size == 0):
+        raise ValueError("No testcases in Datamanager")
+
+
+
+
 
 def save_checkpoint(state, filename="models/checkpoint.pth.tar"): #Save as .tar file
     torch.save(state, filename)
@@ -110,11 +122,13 @@ optimizer = optim.Adam(model.parameters(),
 #checkpoint = torch.load(checkpoint_path)
 
 def test_network():
-    dataset = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
-    model = Module(27,25)
+    dataset_test = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
+    dataset_train = Datamanager.Datamanager("Data/data_r_train.csv",dim=5)
+    model = Module(dataset_test.inputs,dataset_test.outputs)
     #model.apply(weights_init)
     optimizer = optim.Adam(model.parameters(),
                         lr=5e-4,betas=(0.9,0.999),eps=1e-08,weight_decay=1e-4)
-    loss_function = nn.NLLLoss()
-    train(dataset, model=model,optimizer=optimizer,loss_function=loss_function,iterations=10,batch=10)
+    loss_function = nn.MultiLabelMarginLoss()
+    #loss_function = nn.KLDivLoss()
+    train(casemanager_train=dataset_train,casemanager_test=dataset_test, model=model,optimizer=optimizer,loss_function=loss_function,iterations=1000,batch=10)
 test_network()

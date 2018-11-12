@@ -126,7 +126,14 @@ class TestDatamanager(unittest.TestCase):
         datamanager_2.update_csv_limit(data=data_values,limit=10)
         data_updated_2 = datamanager_2.read_csv()
         self.assertEqual(len(data_updated_2), len(data_2))
-        
+    
+    def test_return_batch(self):
+        datamanager = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
+
+        x,y = datamanager.return_batch(1)
+        self.assertEqual(x.shape[0],1)
+        self.assertEqual(y.shape[0],1)
+
 
 if __name__=="__main__":
     unittest.main()

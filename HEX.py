@@ -38,7 +38,7 @@ class HEX_Cell():
     def __init__(self,x, y, edge = 0, edge_v = NONE):
         self.state = 0 # Tells wheter or not we have been visited before, and by which player.
         #self.edge = edge # Keep track of whether or not we are an edge cell, and which one.
-        self.edge_v = edge_v # Keep track of what specific edge we are, if any
+        self.edge_v = edge_v # Keep track of what specific edge we are, if any (to spare us the time of searching)
         self.x = x # Keep track of our index
         self.y = y # Keep track of our index
         # We need to keep track of, if we are able to connect to an edge.
