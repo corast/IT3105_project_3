@@ -8,6 +8,9 @@ from base.State import *
 from base.Game import *
 import Datamanager
 import misc
+import network
+
+import torch
 
 #TODO: Import policy to use with rollout.
 
@@ -111,18 +114,54 @@ class Node():
         self.children.append(node) # Add child to parent node
 
     # ***** ROLLOUT FUNCTIONS
-    def rollout_policy(self, actions): # Allows us to change policy if needed
+
+    
+    def rollout_policy_network(self, rollout_state,  anet:network.Module, greedy): # TODO: high probability for random to begin with.
+        # We neede to get our state + PID as input.
+        PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
+        data_input = self.game.get_state_as_input()
+        data_input = PID + data_input # input to our network.
+        # Need to convert list to tensor.
+        output = anet.evaluate(torch.FloatTensor(data_input)) # output should be an vector with same size as board.
+
+        output = torch.Tensor.numpy(output.detach()) # convert to numpy array.
+        legal_moves = rollout_state.get_legal_actions_bool() # 1 is legal, 0 is illegal.
+        
+        actions = np.multiply(output, legal_moves) # Need to select the highest value from this one.
+        
+        #Check if array only containt zeros, in this case we randomly choose from legal_actions, since the network dont know anything.
+        if(misc.all_zeros(actions)): # * If network didnt suggest any legal actions. ( Completly untrained )
+            possible_moves = rollout_state.get_actions() # Return legal actions.
+            return self.rollout_policy_random(possible_moves)
+
+        # Select with coresponding value.
+        if(greedy):
+        # greedily select best action.
+            action = np.unravel_index(np.argmax(actions),(5,5))
+            return action
+        else:
+            # Stochasticly almost select the best action with weights.
+            actions = actions.ravel().tolist()
+            stochastich_weights = misc.normalize_array(actions)
+            action = np.unravel_index(np.random.choice(range(5*5),p=stochastich_weights),(5,5)) # Return best action with it's probability, or explore other children instead.
+            return action
+        # ! Handle illegal action from untrained network.
+    def rollout_policy_random(self, actions): # Allows us to change policy if needed
         choice = np.random.choice(len(actions)) #randomly choice one of the indexes
         return actions[choice] #return choice, from our action list based on index
     
-    def rollout(self, root_player): # How we traverse the rest of the tree to terminal
+    def rollout(self, root_player, anet=None, greedy=False): # How we traverse the rest of the tree to terminal
         rollout_state = copy.deepcopy(self.game) # copy game state, since we don't want to keep states from this point onward.
         game_finished = self.is_termal_node()
         while not game_finished: # 
-            possible_moves = rollout_state.get_actions() # Return legal actions.
             #print("possible moves", possible_moves, rollout_state.state.num_pieces)
-            action = self.rollout_policy(possible_moves) # Choice one of legal actions, based on a few criteria.
-            game_finished = rollout_state.play(action) # Do this action to game state.
+            if(anet is None):
+                possible_moves = rollout_state.get_actions() # Return legal actions.
+                action = self.rollout_policy_random(possible_moves) # Choice one of legal actions, based on a few criteria.
+            else: #we want to use this rollout_policy instead, assume it is an network.
+                action = self.rollout_policy_network(rollout_state, anet, greedy=greedy)
+            #rollout_state.display_board()
+            game_finished = rollout_state.play(action) # * Do this action directly on game state.
         #Return reward based on if we won or not, -1 if we lost, 1 if we won.
         return rollout_state.get_winner() # * Return which player won, and give wins accordingly.
         #return rollout_state.get_reward(root_player),rollout_state.get_winner()# We need to check if current player from root won. (who made the play to leaf)
@@ -213,3 +252,4 @@ class Node():
         data = {"node_depth":self.node_depth,"previous_action":self.action,
         "wins":self.wins, "visits":self.num_visits,"score":self.score}
         return data.__str__()
+

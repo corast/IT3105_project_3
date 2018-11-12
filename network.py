@@ -1,6 +1,7 @@
 # Contain the "rollout"(Policy) network. Which will ultimatly decice which action we take from a given state.
 import torch
 import torch.nn as nn # neural netork modules
+import torch.nn.init as init
 import torch.nn.functional as F # optimizer
 import torch.optim as optim
 import os
@@ -9,32 +10,43 @@ from IPython.core.debugger import set_trace
 import time
 import Datamanager
 
-torch.manual_seed(2809)
-np.random.seed(2809)
+import misc
+
+#torch.manual_seed(2809)
+#np.random.seed(2809)
 
 class Module(nn.Module):
 
-    def __init__(self,insize = 27,outsize = 25): # Define the network in detail
-        super().__init__() # Dunno
+    def __init__(self,insize = 52,outsize = 25): # Define the network in detail
+        super().__init__() 
         self.outsize = outsize
         self.insize = insize
 
         self.inL = nn.Linear(insize,60)
-        #self.drop1 = nn.Dropout(p=0.5)
+        self.drop1 = nn.Dropout(p=0.5)
         self.hL = nn.Linear(60,outsize)
-
         #self.outL = nn.Softmax(outsize) # output is only a board state.
 
     def forward(self, input):
         # set_trace() # debugging
         x = self.inL(input) # put input in input layer
         x = F.relu(x) # output activation.
-        #x = self.drop1(x)
+        x = self.drop1(x)
         x = self.hL(x)
         x = F.relu(x)
-        x = F.log_softmax(x,dim=1)
+        #x = F.softmax(x,dim=1)
+        #x = F.log_softmax(x,dim=1) # softmax the final output
         return x # Return output, whatever it is.
     
+    # Log_softmax -> Scale output between 0 and 1 + sum to 1
+    #
+
+    def evaluate(self, input):
+        """ Use the network, as policy """
+        self.eval() # Turn off training, etc.
+        return self.forward(input)
+
+
     def store(self):
         #Store ourself in a file for later use
         pass
@@ -42,8 +54,10 @@ class Module(nn.Module):
 
 def weights_init(model): # Will reset states if called again.
     if isinstance(model, nn.Linear):
-        model.weights.data.fill_(1.0)
-        model.bias.data.zero_() # Bias is set to
+        init.xavier_uniform_(model.weight)
+        #model.weights.data.fill_(1.0)
+        init.constant_(model.bias,0.01)
+        #model.bias.data.zero_() # Bias is set to
 
 def train(casemanager_train:Datamanager,casemanager_test:Datamanager, model, optimizer, loss_function, iterations, batch, gpu=False):
     #train_loder is a training row,
@@ -55,8 +69,9 @@ def train(casemanager_train:Datamanager,casemanager_test:Datamanager, model, opt
     for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
         #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
         loss_train = train_batch(casemanager_train, model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
-        loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
-        print(t, loss_train, loss_test)
+        loss_test = evaluate_test(casemanager_test, model=model, loss_function=loss_function)
+        print("{}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train, loss_test))
+        #print(t,"loss_train:", loss_train,"loss_test:", loss_test)
 
 
 def train_batch(casemanager:Datamanager, model, optimizer, loss_function, batch):
@@ -71,19 +86,12 @@ def train_batch(casemanager:Datamanager, model, optimizer, loss_function, batch)
     optimizer.step()
     return loss.item()
 
-def evaluate(casemanager:Datamanager, model, loss_function):
-    model.eval()
+def evaluate_test(casemanager:Datamanager, model, loss_function):
+    model.eval() # Change behaviour of some layers, like no dropout etc.
     with torch.no_grad(): # Turn off gradient calculation requirements, faster.
         data,target = casemanager.return_batch("all")
-        size = data.shape[0]
         prediction = model(data)
         return loss_function(prediction,target).item() # Get loss value.
-    if(size == 0):
-        raise ValueError("No testcases in Datamanager")
-
-
-
-
 
 def save_checkpoint(state, filename="models/checkpoint.pth.tar"): #Save as .tar file
     torch.save(state, filename)
@@ -124,11 +132,59 @@ optimizer = optim.Adam(model.parameters(),
 def test_network():
     dataset_test = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
     dataset_train = Datamanager.Datamanager("Data/data_r_train.csv",dim=5)
-    model = Module(dataset_test.inputs,dataset_test.outputs)
-    #model.apply(weights_init)
-    optimizer = optim.Adam(model.parameters(),
-                        lr=5e-4,betas=(0.9,0.999),eps=1e-08,weight_decay=1e-4)
+    model = Module(dataset_test.inputs, dataset_test.outputs)
+    model.apply(weights_init)
+
+    #optimizer = optim.Adam(model.parameters(), lr=5e-4,betas=(0.9,0.999),eps=1e-08,weight_decay=1e-4)
+    #optimizer  = optim.SGD(model.parameters(), lr=5e-4,momentum=0.01, dampening=0)
+    optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8,weight_decay=0)
+    #optimizer = optim.Adagrad(model.parameters(), lr=1e-2,lr_decay=0,weight_decay=0)
+
     loss_function = nn.MultiLabelMarginLoss()
+    #loss_function = nn.CrossEntropyLoss()
+    #loss_function = nn.BCEWithLogitsLoss()
     #loss_function = nn.KLDivLoss()
-    train(casemanager_train=dataset_train,casemanager_test=dataset_test, model=model,optimizer=optimizer,loss_function=loss_function,iterations=1000,batch=10)
-test_network()
+    #loss_function = nn.NLLLoss2d
+    #train(casemanager_train=dataset_train,casemanager_test=dataset_test, model=model,optimizer=optimizer,loss_function=loss_function,iterations=200,batch=50)
+
+    data_input, data_target = dataset_test.return_batch(1)
+
+    output = model.evaluate(data_input)
+    output = torch.Tensor.numpy(output.detach())
+    print(output)
+    #print(output.shape)
+    print("sum outputs",np.sum(output) ," : ",output.tolist())
+    legal_moves = np.array([[0,0,0,0,0],[0,1,0,1,1],[0,1,1,1,1],[0,0,0,0,0],[0,0,1,1,1]]) # 5x5
+    legal_moves = legal_moves.reshape(1,25)
+    #print(legal_moves)
+    actions = np.multiply(output,legal_moves)
+    #print(actions.shape)
+    #print(actions.ravel().shape)
+    action = actions.ravel().tolist() # id array
+
+    #print("sum actions:", sum(action))
+    print("greedy",np.argmax(actions), np.unravel_index(np.argmax(action),(5,5)))# Get the index as a touple in cordinate array.
+    
+    p = misc.normalize_array(action)
+    print("normalize:", sum(p))
+    #convert index into action.
+    # 25 ->(4,4) 0->(0,0)
+    #print(type(action),"s",action)
+
+    print("choice value:", np.random.choice(action, p=p))
+    print("Nye start")
+    print("action", action,"\n", p)
+    a = np.random.choice(action, p=p)
+    print(np.where(action == a)[0][0])
+
+    print(np.random.choice(range(5*5),p=p))
+
+def fix_p(p):
+    npsum = np.sum(p)
+    if npsum != 1.0:
+        p = np.multiply(p,1/npsum).tolist()
+        #p = p*(1./np.sum(p))
+    return p
+
+
+#test_network()

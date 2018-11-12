@@ -7,6 +7,9 @@ import variables
 #from variables import *
 from Node import *
 from MCTS import *
+#pytorch
+import torch.optim as optim
+import torch.nn as nn
 
 def check_positive(value):
     ivalue = int(value)
@@ -67,7 +70,9 @@ if __name__=="__main__":
                         required=True, type=str) 
 
     parser.add_argument("-r","--rollout",choices=["random","ANET"],
-                        default = "random", required=True) 
+                        default = "random") 
+    parser.add_argument("-tl","--time_limit", default = False, type=bool,
+                                required=False)
 
     subparsers = parser.add_subparsers(title="game", dest="game",help="sub-game help"
                     ,required=True)
@@ -105,12 +110,21 @@ if __name__=="__main__":
     # Handle action arg
     action = variables.action.get(args.action) # None is default in our case.
     rollout = variables.rollout_policy.get(args.rollout)
+    time_limit = args.time_limit # get boolean if something set
     if(action is None):
         raise ValueError("No action selected")
+    
+    if(args.rollout == "ANET"):
+        # We need to make our network.
+        ANET = network.Module() # Use default values
+        ANET.apply(network.weights_init) # init weights and biases.
 
     if(game is not None):
         root = Node(game) # Init root node from game state.
-        mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_random.csv", dim=args.dimentions)) 
+        if(args.rollout == "ANET"):
+            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_time.csv", dim=args.dimentions),time_limit=time_limit, rollout_policy=ANET)
+        else:
+            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_time.csv", dim=args.dimentions),time_limit=time_limit) 
         #mcts.simulate_best_action(root,10)
         mcts.play_batch(batch=args.batch,num_sims=args.num_sims,start_player=args.start_player)
     else:
@@ -126,7 +140,7 @@ if __name__=="__main__":
 #   
 #   Network Architecture:
 #       Not very deep. Keiths's, 50, 50, 25, output.
-# Alpha go. input state player, one. Expansion code (player has huge effect on game).
+# Alpha go. input state player, one. Expansion code with matrix, where every value represent player (player has huge effect on game), drawback, harder to train ( more weights )
 #   Conv, don't usually needed on small games like this (5x5), defently on 10x10 board game.
 #   
 #   Interface, can test as much as possible. One minute limit.

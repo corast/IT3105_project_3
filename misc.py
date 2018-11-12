@@ -1,5 +1,4 @@
-if __name__ == "__main__":
-    pass
+import numpy as np
 
 # Misc functions
 def int_to_one_hot_vector(value, size, off_val=0, on_val=1):
@@ -42,9 +41,26 @@ def normalize_array(data, x_min=1):
     #x_min = min(data)
     #data = [(x-x_min)/(x_max-x_min) for x in data]
     mean = sum(data)
-    return [x/mean for x in data]
+    if(mean != 0):
+        if(mean != 1.0):
+            return [x/mean for x in data]
+        return data # already normalized.
+    raise ValueError ("Cant normalize an array with no sum")
 
 def min_max_scaling(data):
     x_max = max(data)    
     x_min = min(data)
     return [(x-x_min)/(x_max-x_min) for x in data]
+
+def fix_p(p): # normalize p to sum = 1
+        npsum = np.sum(p)
+        if npsum != 1.0:
+            p = np.multiply(p,1/npsum).tolist()
+            #p = p*(1./np.sum(p))
+        return p
+
+def all_zeros(data):
+    nonzer = np.count_nonzero(data)
+    if(nonzer != 0):
+        return False
+    return True
