@@ -149,49 +149,38 @@ class MCTS():
         # Player turn should be P.
         # We need to create new games of nim for each starting player.
 
-    def play_batch_with_training(self, optimizer, batch_size, training_size, k, num_sims, start_player=1): # * Function to train for each batch.
+    def play_batch_with_training(self, optimizer, batch_size, training_size, k, num_sims, epoch=0, start_player=1): # * Function to train for each batch.
         # batch_size is number of games we play, num_sims is seconds we simulate for each move.
         # k is how often we save an agent. training_size is how many games between training.
         # If batch is 1, we train after each game, otherwise we choose.
         # We also don't want to start training until buffer is filled with random data.
         if(start_player < 1 or start_player > 3):
             raise ValueError('Value of {} as P is not supported'.format(start_player))
-
-        #Start by saving the network as agent 0.
-        self.rollout_policy.store(epoch=0, optimizer=optimizer, loss=1000)#Max loss to begin with.
         
-        for game in range(1, batch_size + 1 ): # number of games we play
+        if(epoch == 0): # Save network if we are starting from scratc.
+            #Start by saving the network as agent 0.
+            self.rollout_policy.store(epoch=0, optimizer=optimizer, loss=1000)#Max loss to begin with.
+
+        training_count = 0 # Count number of times we have trained, to easily check if needing to store.
+
+        for game in range(1+epoch, batch_size + 1 + epoch): # number of games we play
             
-            sim_node = copy.deepcopy(self.root) # Copy root state of game.
-
-
-            if(game % training_size == 0):
-                #We train.
-                self.rollout_policy.train(casemanager_train=self.datamanager)
-            if(game % k == 0 or game == 1): # 1 % 50 = 1
-                #save initial game.
-
-
-        wins = [0,0] # Keep track of amount of wins for both players
-        start_state = [0,0] # Keep track of amount of times each player start a game.
-        for game in range(1, batch_size+1): # from 1 to batch plays.
-            sim_node = copy.deepcopy(self.root) # create a copy of the start state.
+            sim_node = copy.deepcopy(self.root) # Copy root state of game. # So that we have a starting point to simulate from.
             sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
+            # * Play game
 
-            if(sim_node.game.get_current_player() == 1):
-                start_state[0] += 1
-            else:
-                start_state[1] += 1
-            #print(start_player,"current_player",sim_node.game.get_current_player(), "prev",sim_node.parent)
-            if(variables.verbose >= variables.play):
-                print("Game {} ###".format(game))
-            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims)
-            #print("sim_node",sim_node)
-            winner = sim_node.game.get_winner() # get winning player in terminal state
-            if(winner == 1):
-                wins[0] += 1
-            else:
-                wins[1] += 1
+            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims) # get last state of game.
+            # Check winner.
+            if(game % training_size == 0): # We want to train between every game?
+                #We train.
+                loss = self.rollout_policy.train(casemanager_train=self.datamanager)
+                training_count += 1 # update training count
+                # Check if we want to store this trained policy network. 
+                if(training_count % k == 0): # store every x training times.
+                    print("Storing network")
+                    self.rollout_policy.store(epoch=training_count, optimizer = optimizer, loss = loss)
+                    # We need to save our epoch. networkName_0, networkName_1, networkName_2, etc.
+
 
 
 """ 

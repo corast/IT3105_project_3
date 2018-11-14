@@ -48,34 +48,41 @@ class Module(nn.Module):
         return self.forward(input)
 
     def train(self, casemanager_train:Datamanager, optimizer, 
-            loss_function, iterations, batch, gpu=False, casemanager_test:Datamanager=None):
+            loss_function, batch=10, iterations=1, gpu=False, casemanager_test:Datamanager=None):
         #train_loder is a training row,
         start = time.time()
         #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         #module.to(device) # Put model on the specified device. 
+
+        loss_train = 0
+        loss_test = 0
+        print("Training network {}".format(self.name))
         if(casemanager_test is None): # * If we want to evaluate against another dataset, different from train.
             # We only train and show loss from this.
+            
             for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
                 #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
-                loss_train = train_batch(casemanager_train, 
+                loss_train_i = train_batch(casemanager_train, 
                 model=self, optimizer=optimizer, loss_function=loss_function, batch=batch)
-                print("{}  loss_train: {:.8f}".format(t,loss_train))
-                #print(t,"loss_train:", loss_train,"loss_test:", loss_test)
+                print("itteration {} loss_train: {:.8f}".format(t, loss_train_i))
+                loss_train += loss_train_i
+            return loss_train/iterations # * average loss
         else:
             for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
                 #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
-                loss_train = train_batch(casemanager_train, 
+                loss_train_i = train_batch(casemanager_train, 
                 model=self, optimizer=optimizer, loss_function=loss_function, batch=batch)
-                loss_test = evaluate_test(casemanager_test, 
+                loss_test_i = evaluate_test(casemanager_test, 
                 model=self, loss_function=loss_function)
-                print("{}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train, loss_test))
-                #print(t,"loss_train:", loss_train,"loss_test:", loss_test)
+                print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train_i, loss_test_i))
+                loss_train += loss_train_i ; loss_test += loss_test_i
+            return loss_train/iterations, loss_test/iterations # * Return average loss of both.
 
 
     def store(self,epoch,optimizer,loss): # Need model, and optimizer
         #Store ourself in a file for later use
         print("Storing ourself to file...")
-        save_path = "models/"+ self.name # After training, we need to change our name.
+        save_path = "models/"+ self.name + "_" + str(epoch) # save a new network with an unique ID, name + epoch
         torch.save({'epoch':epoch,
                     'model_state_dict':self.state_dict(),
                     'optimizer_state_dict':optimizer.state_dict(),
