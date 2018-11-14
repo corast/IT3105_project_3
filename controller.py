@@ -44,6 +44,10 @@ def play_nim(max_pieces, num_pieces):
 def play_hex(dim): # TODO: init start player etc.
     return HEX(dim)
 
+def ANET():
+    return network.Module(insize=52,outsize = 25,name="ANET")
+
+
 
 FUNCTION_MAP = {'NIM' : play_nim,
                 'HEX' : play_hex}
@@ -116,13 +120,16 @@ if __name__=="__main__":
     
     if(args.rollout == "ANET"):
         # We need to make our network.
-        ANET = network.Module() # Use default values
-        ANET.apply(network.weights_init) # init weights and biases.
+        rollout_policy = ANET() # Use default values
+        rollout_policy.apply(network.weights_init) # init weights and biases.
 
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
-            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_time.csv", dim=args.dimentions),time_limit=time_limit, rollout_policy=ANET)
+            # create network.
+
+            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_time.csv", 
+                dim=args.dimentions),time_limit=time_limit, rollout_policy=rollout_policy)
         else:
             mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_time.csv", dim=args.dimentions),time_limit=time_limit) 
         #mcts.simulate_best_action(root,10)

@@ -56,7 +56,7 @@ class MCTS():
                     winner = leaf.rollout(root_player)
                 else: # We want to use another policy for rollout.
                     #TODO: pass the policy to the rollout function.
-                    winner = leaf.rollout(root_player, self.rollout_policy, self.greedy) # Rollout from this node, and get the reward from this stage. 
+                    winner = leaf.rollout(root_player, self.rollout_policy, greedy=self.greedy) # Rollout from this node, and get the reward from this stage. 
                 #print("leaf", leaf, leaf.game)
                 # Victor is the node in the whole simulated tree that is considered best.
                 winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
@@ -84,12 +84,13 @@ class MCTS():
         # TODO: handle creating the case from simulation results. i.e. get number of visits to each node.
         # * [(0,0)=3,(0,1)=1,(0,2)=40,..., PID]
         # We need to create a seperate node.best_child function for when we actually selects a move, since we might want to get the data aswell.
-        if(self.action == variables.action.get("data")):
+        if(self.action == variables.action.get("data")): # * Whether not we need to add data to buffer or not.
             victor,data = node.get_best_child(root_player, data=True) # Get best state node from tree.
             #Store the data.
-            self.datamanager.update_csv(data = [data])
-        victor = node.get_best_child(root_player) # Get best state node from tree.
-        return victor
+            self.datamanager.update_csv(data = [data]) # Add data row to buffer. 
+        else: # We dont do 
+            victor = node.get_best_child(root_player) # Get best state node from tree.
+        return victor # Return best state node, which we want to keep.
 
         #return node.best_child(node.game.get_current_player()).action # After we are done, we select best action from parent.
     # TODO: Episode = game, intra-epsodes moves ingame, + keep tree in intra episode.
@@ -104,7 +105,8 @@ class MCTS():
             if(variables.verbose >= variables.debug):
                 victor.parent.show_tree(100)
                 print("victor tree -v-")
-            node.parent = None # Best state is now the root state. Effectivly prunes tree as well.
+            # ? Remove parent from tree, effectivly prune impossible states.
+            node.parent = None # Best state is now the root state. 
             if(variables.verbose >= variables.play): #if we want to display the turns of the real game.
                 if(variables.verbose >= variables.debug):
                     victor.show_tree(100)
@@ -146,6 +148,52 @@ class MCTS():
             print("Results {} games: Player_1: {:.2f}%({}), Player_2: {:.2f}% ({})".format(batch, p_p1*100, wins[0], p_p2*100, wins[1]))
         # Player turn should be P.
         # We need to create new games of nim for each starting player.
+
+    def play_batch_with_training(self, optimizer, batch_size, training_size, k, num_sims, start_player=1): # * Function to train for each batch.
+        # batch_size is number of games we play, num_sims is seconds we simulate for each move.
+        # k is how often we save an agent. training_size is how many games between training.
+        # If batch is 1, we train after each game, otherwise we choose.
+        # We also don't want to start training until buffer is filled with random data.
+        if(start_player < 1 or start_player > 3):
+            raise ValueError('Value of {} as P is not supported'.format(start_player))
+
+        #Start by saving the network as agent 0.
+        self.rollout_policy.store(epoch=0, optimizer=optimizer, loss=1000)#Max loss to begin with.
+        
+        for game in range(1, batch_size + 1 ): # number of games we play
+            
+            sim_node = copy.deepcopy(self.root) # Copy root state of game.
+
+
+            if(game % training_size == 0):
+                #We train.
+                self.rollout_policy.train(casemanager_train=self.datamanager)
+            if(game % k == 0 or game == 1): # 1 % 50 = 1
+                #save initial game.
+
+
+        wins = [0,0] # Keep track of amount of wins for both players
+        start_state = [0,0] # Keep track of amount of times each player start a game.
+        for game in range(1, batch_size+1): # from 1 to batch plays.
+            sim_node = copy.deepcopy(self.root) # create a copy of the start state.
+            sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
+
+            if(sim_node.game.get_current_player() == 1):
+                start_state[0] += 1
+            else:
+                start_state[1] += 1
+            #print(start_player,"current_player",sim_node.game.get_current_player(), "prev",sim_node.parent)
+            if(variables.verbose >= variables.play):
+                print("Game {} ###".format(game))
+            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims)
+            #print("sim_node",sim_node)
+            winner = sim_node.game.get_winner() # get winning player in terminal state
+            if(winner == 1):
+                wins[0] += 1
+            else:
+                wins[1] += 1
+
+
 """ 
     * Backprogagate
     def backpropagation(self, node): # Backpropagation - Passing the evaluation of a final state back up the tree, 
@@ -168,4 +216,3 @@ class MCTS():
     def tree_search(self,node):  #  rollout_policy, Traversing the tree from the root to a leaf node by using the tree policy.
         pass
 """
-    

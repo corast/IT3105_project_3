@@ -17,10 +17,11 @@ import misc
 
 class Module(nn.Module):
 
-    def __init__(self,insize = 52,outsize = 25): # Define the network in detail
+    def __init__(self,insize = 52,outsize = 25, name="network"): # Define the network in detail
         super().__init__() 
         self.outsize = outsize
         self.insize = insize
+        self.name = name # want each module to have an unique name when we save to file.
 
         self.inL = nn.Linear(insize,60)
         self.drop1 = nn.Dropout(p=0.5)
@@ -46,33 +47,68 @@ class Module(nn.Module):
         self.eval() # Turn off training, etc.
         return self.forward(input)
 
+    def train(self, casemanager_train:Datamanager, optimizer, 
+            loss_function, iterations, batch, gpu=False, casemanager_test:Datamanager=None):
+        #train_loder is a training row,
+        start = time.time()
+        #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        #module.to(device) # Put model on the specified device. 
+        if(casemanager_test is None): # * If we want to evaluate against another dataset, different from train.
+            # We only train and show loss from this.
+            for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
+                #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
+                loss_train = train_batch(casemanager_train, 
+                model=self, optimizer=optimizer, loss_function=loss_function, batch=batch)
+                print("{}  loss_train: {:.8f}".format(t,loss_train))
+                #print(t,"loss_train:", loss_train,"loss_test:", loss_test)
+        else:
+            for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
+                #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
+                loss_train = train_batch(casemanager_train, 
+                model=self, optimizer=optimizer, loss_function=loss_function, batch=batch)
+                loss_test = evaluate_test(casemanager_test, 
+                model=self, loss_function=loss_function)
+                print("{}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train, loss_test))
+                #print(t,"loss_train:", loss_train,"loss_test:", loss_test)
 
-    def store(self):
+
+    def store(self,epoch,optimizer,loss): # Need model, and optimizer
         #Store ourself in a file for later use
-        pass
+        print("Storing ourself to file...")
+        save_path = "models/"+ self.name # After training, we need to change our name.
+        torch.save({'epoch':epoch,
+                    'model_state_dict':self.state_dict(),
+                    'optimizer_state_dict':optimizer.state_dict(),
+                    'loss':loss
+                    },save_path)
+
+class NetWork(): # Hold an model, and coresponding optimizer.
+    def __init__(self, optimizer, layers=[60,60],input_size=52, output_size = 25):
+        self.optimizer = optimizer
+        self.layer = layers
+        self.input_size = input_size
+        self.output_size = output_size
+
+    
+def load_model(path, model, optimizer):
+    model = model # TheModelClass(*args, **kwargs)
+    optimizer = optimizer # TheOptimizerClass(*args, **kwargs)
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
+    loss = checkpoint['loss']
+
+    return model, optimizer, loss, epoch # Return all this info
+    #model.eval # or model.eval after this
 
 
 def weights_init(model): # Will reset states if called again.
     if isinstance(model, nn.Linear):
-        init.xavier_uniform_(model.weight)
+        init.xavier_uniform_(model.weight) # good init with relus.
         #model.weights.data.fill_(1.0)
-        init.constant_(model.bias,0.01)
-        #model.bias.data.zero_() # Bias is set to
-
-def train(casemanager_train:Datamanager,casemanager_test:Datamanager, model, optimizer, loss_function, iterations, batch, gpu=False):
-    #train_loder is a training row,
-
-    start = time.time()
-    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    #module.to(device) # Put model on the specified device. 
-
-    for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
-        #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
-        loss_train = train_batch(casemanager_train, model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
-        loss_test = evaluate_test(casemanager_test, model=model, loss_function=loss_function)
-        print("{}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train, loss_test))
-        #print(t,"loss_train:", loss_train,"loss_test:", loss_test)
-
+        init.constant_(model.bias,0.01) # good init with relus, want every bias to contribute.
+        #model.bias.data.zero_() # Bias is set to all zeros.
 
 def train_batch(casemanager:Datamanager, model, optimizer, loss_function, batch):
     # Switch to training mode
