@@ -65,7 +65,7 @@ class MCTS():
                 leaf.backpropagate(winner, root_player) # Go from leaf node and update the values
                             # c = 2, too high exploration, we might actually try to explore more than guarantee winning.
                 simulations += 1
-            print("we completed", simulations, "sumulations")
+            #print("we completed", simulations, "sumulations")
         else:
             for i in range(0, num_sims): # M = num_sims    
                 leaf = self.tree_policy(node, root_player) # Return leaf node we are going to use for rollout from node state.
@@ -84,7 +84,7 @@ class MCTS():
         # TODO: handle creating the case from simulation results. i.e. get number of visits to each node.
         # * [(0,0)=3,(0,1)=1,(0,2)=40,..., PID]
         # We need to create a seperate node.best_child function for when we actually selects a move, since we might want to get the data aswell.
-        if(self.action == variables.action.get("data")): # * Whether not we need to add data to buffer or not.
+        if(self.action == variables.action.get("data") or self.action == variables.action.get("train")): # * Whether not we need to add data to buffer or not.
             victor,data = node.get_best_child(root_player, data=True) # Get best state node from tree.
             #Store the data.
             self.datamanager.update_csv(data = [data]) # Add data row to buffer. 
@@ -149,7 +149,7 @@ class MCTS():
         # Player turn should be P.
         # We need to create new games of nim for each starting player.
 
-    def play_batch_with_training(self, optimizer, batch_size, training_size, k, num_sims, epoch=0, start_player=1): # * Function to train for each batch.
+    def play_batch_with_training(self, optimizer, loss_function, batch_size, training_size, k, num_sims, epoch=0, start_player=1): # * Function to train for each batch.
         # batch_size is number of games we play, num_sims is seconds we simulate for each move.
         # k is how often we save an agent. training_size is how many games between training.
         # If batch is 1, we train after each game, otherwise we choose.
@@ -164,7 +164,7 @@ class MCTS():
         training_count = 0 # Count number of times we have trained, to easily check if needing to store.
 
         for game in range(1+epoch, batch_size + 1 + epoch): # number of games we play
-            
+            print("Game {}".format(game))
             sim_node = copy.deepcopy(self.root) # Copy root state of game. # So that we have a starting point to simulate from.
             sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
             # * Play game
@@ -173,7 +173,8 @@ class MCTS():
             # Check winner.
             if(game % training_size == 0): # We want to train between every game?
                 #We train.
-                loss = self.rollout_policy.train(casemanager_train=self.datamanager)
+                loss = network.train(self.rollout_policy,casemanager_train=self.datamanager, optimizer=optimizer, loss_function=loss_function,iterations=10)
+                print("Epoch {} loss {:.8f}".format(game, loss))
                 training_count += 1 # update training count
                 # Check if we want to store this trained policy network. 
                 if(training_count % k == 0): # store every x training times.

@@ -11,6 +11,10 @@ from MCTS import *
 import torch.optim as optim
 import torch.nn as nn
 
+torch.manual_seed(2809)
+np.random.seed(2809)
+
+
 def check_positive(value):
     ivalue = int(value)
     if ivalue <= 0:
@@ -128,12 +132,19 @@ if __name__=="__main__":
         if(args.rollout == "ANET"):
             # create network.
 
-            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_time.csv", 
+            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_test_training.csv", 
                 dim=args.dimentions),time_limit=time_limit, rollout_policy=rollout_policy)
         else:
-            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_time.csv", dim=args.dimentions),time_limit=time_limit) 
+            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_test_training.csv", dim=args.dimentions),time_limit=time_limit) 
         #mcts.simulate_best_action(root,10)
-        mcts.play_batch(batch=args.batch,num_sims=args.num_sims,start_player=args.start_player)
+        if( action == variables.action.get("train")):
+            #We want to train isntead of play batch.
+            #optimizer = optim.SGD(rollout_policy.parameters(), lr=5e-4,momentum=0.01, dampening=0)
+            optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8,weight_decay=0)
+            loss_function = nn.MultiLabelMarginLoss()
+            mcts.play_batch_with_training(optimizer=optimizer,loss_function=loss_function,batch_size=100,training_size=1,k=1, num_sims=args.num_sims)
+        else: # Assume we just want to play
+            mcts.play_batch(batch=args.batch,num_sims=args.num_sims,start_player=args.start_player)
     else:
         raise ValueError("No game initiated")
 

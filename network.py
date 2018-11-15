@@ -12,8 +12,6 @@ import Datamanager
 
 import misc
 
-#torch.manual_seed(2809)
-#np.random.seed(2809)
 
 class Module(nn.Module):
 
@@ -24,8 +22,10 @@ class Module(nn.Module):
         self.name = name # want each module to have an unique name when we save to file.
 
         self.inL = nn.Linear(insize,60)
-        self.drop1 = nn.Dropout(p=0.5)
-        self.hL = nn.Linear(60,outsize)
+        self.drop1 = nn.Dropout(p=0.3)
+        self.hL1 = nn.Linear(60,60)
+        self.drop2 = nn.Dropout(p=0.3)
+        self.hL2 = nn.Linear(60,outsize)
         #self.outL = nn.Softmax(outsize) # output is only a board state.
 
     def forward(self, input):
@@ -33,9 +33,15 @@ class Module(nn.Module):
         x = self.inL(input) # put input in input layer
         x = F.relu(x) # output activation.
         x = self.drop1(x)
-        x = self.hL(x)
+        x = self.hL1(x)
         x = F.relu(x)
-        #x = F.softmax(x,dim=1)
+        x = self.drop2(x)
+        x = self.hL2(x)
+        x = F.relu(x)
+        #print("b",x)
+        #x = F.sigmoid(x)
+        #x = F.softmax(x,dim=0)  # 1d tensor
+        #print("a",x)
         #x = F.log_softmax(x,dim=1) # softmax the final output
         return x # Return output, whatever it is.
     
@@ -47,38 +53,6 @@ class Module(nn.Module):
         self.eval() # Turn off training, etc.
         return self.forward(input)
 
-    def train(self, casemanager_train:Datamanager, optimizer, 
-            loss_function, batch=10, iterations=1, gpu=False, casemanager_test:Datamanager=None):
-        #train_loder is a training row,
-        start = time.time()
-        #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        #module.to(device) # Put model on the specified device. 
-
-        loss_train = 0
-        loss_test = 0
-        print("Training network {}".format(self.name))
-        if(casemanager_test is None): # * If we want to evaluate against another dataset, different from train.
-            # We only train and show loss from this.
-            
-            for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
-                #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
-                loss_train_i = train_batch(casemanager_train, 
-                model=self, optimizer=optimizer, loss_function=loss_function, batch=batch)
-                print("itteration {} loss_train: {:.8f}".format(t, loss_train_i))
-                loss_train += loss_train_i
-            return loss_train/iterations # * average loss
-        else:
-            for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
-                #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
-                loss_train_i = train_batch(casemanager_train, 
-                model=self, optimizer=optimizer, loss_function=loss_function, batch=batch)
-                loss_test_i = evaluate_test(casemanager_test, 
-                model=self, loss_function=loss_function)
-                print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train_i, loss_test_i))
-                loss_train += loss_train_i ; loss_test += loss_test_i
-            return loss_train/iterations, loss_test/iterations # * Return average loss of both.
-
-
     def store(self,epoch,optimizer,loss): # Need model, and optimizer
         #Store ourself in a file for later use
         print("Storing ourself to file...")
@@ -87,7 +61,41 @@ class Module(nn.Module):
                     'model_state_dict':self.state_dict(),
                     'optimizer_state_dict':optimizer.state_dict(),
                     'loss':loss
-                    },save_path)
+                    },save_path)    
+
+def train(model, casemanager_train:Datamanager, optimizer, 
+        loss_function, batch=10, iterations=1, gpu=False, casemanager_test:Datamanager=None):
+    #train_loder is a training row,
+    start = time.time()
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #module.to(device) # Put model on the specified device. 
+
+    loss_train = 0
+    loss_test = 0
+    print("Training network {}".format(model.name))
+    if(casemanager_test is None): # * If we want to evaluate against another dataset, different from train.
+        # We only train and show loss from this.
+        
+        for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
+            #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
+            loss_train_i = train_batch(casemanager_train, 
+            model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
+            print("itteration {} loss_train: {:.8f}".format(t, loss_train_i))
+            loss_train += loss_train_i
+        return loss_train/iterations # * average loss
+    else:
+        for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
+            #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
+            loss_train_i = train_batch(casemanager_train, 
+            model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
+            loss_test_i = evaluate_test(casemanager_test, 
+            model=model, loss_function=loss_function)
+            print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train_i, loss_test_i))
+            loss_train += loss_train_i ; loss_test += loss_test_i
+        return loss_train/iterations, loss_test/iterations # * Return average loss of both.
+
+
+
 
 class NetWork(): # Hold an model, and coresponding optimizer.
     def __init__(self, optimizer, layers=[60,60],input_size=52, output_size = 25):
@@ -98,16 +106,17 @@ class NetWork(): # Hold an model, and coresponding optimizer.
 
     
 def load_model(path, model, optimizer):
-    model = model # TheModelClass(*args, **kwargs)
-    optimizer = optimizer # TheOptimizerClass(*args, **kwargs)
-    checkpoint = torch.load(path)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    epoch = checkpoint['epoch']
-    loss = checkpoint['loss']
-
-    return model, optimizer, loss, epoch # Return all this info
-    #model.eval # or model.eval after this
+    if os.path.isfile(path):
+        model = model # TheModelClass(*args, **kwargs)
+        optimizer = optimizer # TheOptimizerClass(*args, **kwargs)
+        checkpoint = torch.load(path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoch = checkpoint['epoch']
+        loss = checkpoint['loss']
+        return model, optimizer, loss, epoch # Return all this info
+    else:
+        print(" => no checkpoint found at '{}'".format(path))
 
 
 def weights_init(model): # Will reset states if called again.
@@ -138,27 +147,6 @@ def evaluate_test(casemanager:Datamanager, model, loss_function):
 
 def save_checkpoint(state, filename="models/checkpoint.pth.tar"): #Save as .tar file
     torch.save(state, filename)
-
-def load_checkpoint(model, optimizer, losslogger, filename="models/checkpoint.pth.tar"):
-    start_epoch = 0
-    if os.path.isfile(filename):
-        print("=> loading checkpoint '{}'".format(filename))
-        checkpoint = torch.load(filename)
-        start_epoch = checkpoint['epoch']
-        model.load_state_dict(checkpoint['optimizer'])
-        losslogger = checkpoint['losslogger']
-        print("=> loaded checkpoint '{}' (epoch {})".format(filename,start_epoch))
-    else:
-        print(" => no checkpoint found at '{}'".format(filename))
-
-def load_checkpoint_state(state,epoch, arch, model, optimizer, filename=""):
-    save_checkpoint(state= {
-    'epoch':epoch + 1, # We want to start from another epoch.
-    'arch':arch,
-    "state_dict":model.state_dict(),
-    "optimizer":optimizer.state_dict(),
-    },filename=filename)
-
 
 """
 checkpoint_path = "models/checkpoint.pth.tar"
@@ -204,30 +192,6 @@ def test_network():
     #print(actions.shape)
     #print(actions.ravel().shape)
     action = actions.ravel().tolist() # id array
-
-    #print("sum actions:", sum(action))
-    print("greedy",np.argmax(actions), np.unravel_index(np.argmax(action),(5,5)))# Get the index as a touple in cordinate array.
-    
-    p = misc.normalize_array(action)
-    print("normalize:", sum(p))
-    #convert index into action.
-    # 25 ->(4,4) 0->(0,0)
-    #print(type(action),"s",action)
-
-    print("choice value:", np.random.choice(action, p=p))
-    print("Nye start")
-    print("action", action,"\n", p)
-    a = np.random.choice(action, p=p)
-    print(np.where(action == a)[0][0])
-
-    print(np.random.choice(range(5*5),p=p))
-
-def fix_p(p):
-    npsum = np.sum(p)
-    if npsum != 1.0:
-        p = np.multiply(p,1/npsum).tolist()
-        #p = p*(1./np.sum(p))
-    return p
 
 
 #test_network()

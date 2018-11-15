@@ -12,10 +12,15 @@ import csv # Gives us the oppurtunity to write to an file.
 import numpy as np
 import random
 import torch
+import os
 #import pandas
 class Datamanager():
     def __init__(self, filepath, dim=5):
         self.filepath = filepath
+        #if(not os.path.isfile(filepath)): # if filepath is not a file
+
+        #    raise ValueError("filepath is not a path")
+
         self.inputs = 2+dim*dim*2
         self.outputs = dim*dim
     
