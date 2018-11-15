@@ -11,8 +11,8 @@ from MCTS import *
 import torch.optim as optim
 import torch.nn as nn
 
-torch.manual_seed(2809)
-np.random.seed(2809)
+#torch.manual_seed(2809)
+#np.random.seed(2809)
 
 
 def check_positive(value):
@@ -132,10 +132,10 @@ if __name__=="__main__":
         if(args.rollout == "ANET"):
             # create network.
 
-            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_test_training.csv", 
+            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_random.csv", 
                 dim=args.dimentions),time_limit=time_limit, rollout_policy=rollout_policy)
         else:
-            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_test_training.csv", dim=args.dimentions),time_limit=time_limit) 
+            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_random.csv", dim=args.dimentions),time_limit=time_limit) 
         #mcts.simulate_best_action(root,10)
         if( action == variables.action.get("train")):
             #We want to train isntead of play batch.

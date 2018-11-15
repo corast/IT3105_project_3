@@ -160,6 +160,11 @@ optimizer = optim.Adam(model.parameters(),
 
 #checkpoint = torch.load(checkpoint_path)
 
+def train_architecture_testing():
+    dataset_train = Datamanager.Datamanager("Data/data_random.csv")
+
+
+
 def test_network():
     dataset_test = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
     dataset_train = Datamanager.Datamanager("Data/data_r_train.csv",dim=5)
@@ -193,5 +198,16 @@ def test_network():
     #print(actions.ravel().shape)
     action = actions.ravel().tolist() # id array
 
+    def generate_network(settings):
+        # dictionay should contain array of the network
+        loss_function = settings.get("loss_function")
+        optimizer = settings.optimizer # TODO: need to add nework params.
+        layers = settings.get("layers")
 
-#test_network()
+
+network_dict = {
+    "layers":[40,30,60],
+    "optimizer":optim.Adadelta,
+    "optim_params":{"lr":1.0,"rho":0.9,"eps":1e-6},
+    "loss_function":nn.MultiLabelMarginLoss(),
+}

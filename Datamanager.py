@@ -27,7 +27,7 @@ class Datamanager():
     # TODO: specify an random amount as cases
     # TODO: use dictionaries instead?
 
-    def read_csv(self,header=False,amount=1): # amount is to specify whether or not we want all the file or not.
+    def read_csv(self,header=False): # amount is to specify whether or not we want all the file or not.
         # read the content of the csv file.
         file = []
         with open(self.filepath) as csv_file:
@@ -126,6 +126,11 @@ class Datamanager():
         t_targets = torch.from_numpy(np.array(targets)).long()
 
         return t_inputs, t_targets
+
+    def get_buffer_size(self):
+        r""" return number of rows in csv file"""
+        data = self.read_csv()
+        return len(data)
 
 
 def test_return_batch():

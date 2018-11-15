@@ -161,6 +161,10 @@ class MCTS():
             #Start by saving the network as agent 0.
             self.rollout_policy.store(epoch=0, optimizer=optimizer, loss=1000)#Max loss to begin with.
 
+        # fill buffer using random rollout, since this is better than untrained network.
+        size = self.datamanager.get_buffer_size()
+
+
         training_count = 0 # Count number of times we have trained, to easily check if needing to store.
 
         for game in range(1+epoch, batch_size + 1 + epoch): # number of games we play
