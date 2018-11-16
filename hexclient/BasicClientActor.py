@@ -4,9 +4,10 @@ import os,sys,inspect
 current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir) 
-
+from Actor import Actor
+import network
 import misc
-import Actor
+#import Actor.Actor as Actor
 
 class BasicClientActor(BasicClientActorAbs):
     def __init__(self, IP_address = None,verbose=True):
@@ -23,24 +24,20 @@ class BasicClientActor(BasicClientActorAbs):
         then you will see a 2 here throughout the entire series, whereas player 1 will see a 1.
         :return: Your actor's selected action as a tuple (row, column)
         """
-
         # * Need to turn state into input to network.
         state_board = state[1:] # only select board state.
+        legal_states = misc.get_legal_states(state_board) # Legal states.
+
         state_board = misc.int_board_to_network_board(state_board)
 
         PID = misc.int_to_binary_rev(state[0]) # player
-        legal_states = misc.get_legal_states(state_board) # Legal states.
 
-        board = state_board.extend(PID) # Add player id to network.
-        
+        state_board.extend(PID) # Add player id to network.
 
-
-
-        return ANET.get_action(board, legal_states)
-
+        next_move = ANET.get_action(state_board, legal_states)
 
         # This is an example player who picks random moves. REMOVE THIS WHEN YOU ADD YOUR OWN CODE !!
-        next_move = tuple(self.pick_random_free_cell(state, size=int(math.sqrt(len(state)-1))))
+        #next_move = tuple(self.pick_random_free_cell(state, size=int(math.sqrt(len(state)-1))))
 
         #############################
         #
@@ -158,9 +155,9 @@ class BasicClientActor(BasicClientActorAbs):
 
 
 if __name__ ==  '__main__':
+    # TODO: add flexability to network creation.
+    model = network.Module(insize = 52, outsize = 25, name="network")
+    ANET = Actor(model = model, filepath = "models/testing_network_2000")
     bsa = BasicClientActor(verbose=True)
     bsa.connect_to_server()
 
-    # TODO: add flexability to network creation.
-    model = network.Module(insize = 52, outsize = 25, name="network"
-    ANET = Actor(model = model),filepath = "models/testing_network_2000")
