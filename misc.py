@@ -26,7 +26,7 @@ def int_to_binary(value,size=2): # int value to convert, size is length of array
             b_array.insert(0,0) # Add trailing zeros 01 -> x*0+01
     return b_array   
 
-# Use to represent states and PID, (2,2) -> [0,1], (1,2) -> [1,0]
+# Use to represent states and PID, 2 -> [0,1], 1 -> [1,0]
 def int_to_binary_rev(value,size=2):
     v = int_to_binary(value, size)
     v.reverse()
@@ -64,3 +64,19 @@ def all_zeros(data):
     if(nonzer != 0):
         return False
     return True
+
+def int_board_to_network_board(board):
+    # * takse an matrix with len = dim*dim
+    # Return an tensor with len = dim*dim*2
+    board_state = [] # default board.
+    for state in board:
+        cell_state = int_to_binary_rev(state)
+        board_state.extend(cell_state)
+    return board_state
+
+def get_legal_states(board): # [1,0,0,1] 1's and 2's
+    #return legal moves for every 0's
+    npb = np.array(board)
+    npz = np.zeros((len(board)))
+    legal_moves = np.logical_and(npz,npb)
+    return legal_moves

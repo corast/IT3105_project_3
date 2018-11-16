@@ -123,7 +123,7 @@ class Datamanager():
         inputs = data
         #print("targets",targets)
         t_inputs = torch.from_numpy(np.array(inputs)).float()
-        t_targets = torch.from_numpy(np.array(targets)).long()
+        t_targets = torch.from_numpy(np.array(targets)).float()
 
         return t_inputs, t_targets
 

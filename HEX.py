@@ -200,7 +200,7 @@ class HEX_State(State):
             if(self.board[x][y].update_state(self.player_turn)): # Tell cell to update it's value.
                 self.winner = self.player_turn # Set that someone won.
                 #print("!!!!!!!!!!! PLAYER {} WON !!!!!!!!!!!!!!".format(self.player_turn))
-            # * update state_array
+            # * update state_array for NN input
             one_hot = int_to_binary_rev(self.board[x][y].state, 2) # Return the state as a binary array.
             for v,value in enumerate(one_hot):
                 index = x*self.dimx*2+y*2+v # [0,1,2] -> [0,0,1,1,2,2]
@@ -230,7 +230,7 @@ class HEX_State(State):
     def get_board_1d(self):
         #return all cells as an array [R1,R2,R3,R4,R5]
         return self.board.ravel()
-    
+
     def get_state_as_input_nn(self): # Return this state as it should be input to the Neural Network.
         # State + PID
         # How can we go from an array of dimxdim to dimxdimx2 + 2 ?
