@@ -76,7 +76,12 @@ def int_board_to_network_board(board):
 
 def get_legal_states(board): # [1,0,0,1] 1's and 2's
     #return legal moves for every 0's
-    npb = np.array(board)
-    npz = np.zeros((len(board)))
-    legal_moves = np.logical_and(npz,npb)
-    return legal_moves
+    legal_moves = []
+    for state in board:
+        if(state == 0):
+            legal_moves.append(1)
+        else:
+            legal_moves.append(0)
+    return np.array(legal_moves)
+
+print(get_legal_states([1,0,2,0]))

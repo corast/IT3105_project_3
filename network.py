@@ -70,6 +70,7 @@ class Module(nn.Module):
                     },save_path)
 
     # params; input:dim*dim+2 
+    # Input: tensor with dim (N,*), legal_moves tensor (1,D)
     def get_action(self, input, legal_moves): #should return an specific action.
         prediction =  self.evaluate(input) # * Return dim*dim vector.
         #Return argmax as touple.
@@ -93,7 +94,7 @@ def train(model, casemanager_train:Datamanager, optimizer,
     print("Training network {}".format(model.name))
     if(casemanager_test is None): # * If we want to evaluate against another dataset, different from train.
         # We only train and show loss from this.
-        
+
         for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
             #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
             loss_train_i = train_batch(casemanager_train, 
@@ -111,8 +112,6 @@ def train(model, casemanager_train:Datamanager, optimizer,
             print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train_i, loss_test_i))
             loss_train += loss_train_i ; loss_test += loss_test_i
         return loss_train/iterations, loss_test/iterations # * Return average loss of both.
-
-
 
 
 class NetWork(): # Hold an model, and coresponding optimizer.

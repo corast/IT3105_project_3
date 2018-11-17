@@ -5,6 +5,7 @@
 import network
 import numpy as np
 import misc
+import torch
 
 class Actor():
     def __init__(self,model=None, filepath=None):
@@ -27,8 +28,10 @@ class Actor():
             dim = len(legal_moves)
             # Want to create an (1,dim) as legal moves.
             # board_state also need to be fixed.
+            #print("board_state", board_state)
+            board_state = torch.from_numpy(np.array(board_state)).float()
 
-            self.model.get_action(board_state, legal_moves)
+            return self.model.get_action(board_state, legal_moves)
         # The actor make plays on an game, based on the game.
         # Should handle any game
         # This could either be MTC + ANN, or an interface (Keith's) or an player via terminal
