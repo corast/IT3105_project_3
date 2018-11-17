@@ -143,12 +143,15 @@ if __name__=="__main__":
             optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8,weight_decay=0)
             loss_function = nn.MultiLabelMarginLoss()
             mcts.play_batch_with_training(optimizer=optimizer,
-            loss_function=loss_function,batch_size=100,training_size=1,k=1, num_sims=args.num_sims)
+            loss_function=loss_function,batch_size=100, training_size=1,k=1, num_sims=args.num_sims)
         else: # Assume we just want to play
             mcts.play_batch(batch=args.batch,num_sims=args.num_sims,start_player=args.start_player)
     else:
         raise ValueError("No game initiated")
 
+
+# Loss functions:
+# mse_loss and mse_loss
 
 # QA 
 #   Don't use whole buffer. Will simply make it harder to adjust to new players.

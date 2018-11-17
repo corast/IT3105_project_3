@@ -28,7 +28,7 @@ class Actor():
             # Want to create an (1,dim) as legal moves.
             # board_state also need to be fixed.
 
-            self.model.get_action(board_state, legal_moves)
+            return self.model.get_action(board_state, legal_moves)
         # The actor make plays on an game, based on the game.
         # Should handle any game
         # This could either be MTC + ANN, or an interface (Keith's) or an player via terminal

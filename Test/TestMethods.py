@@ -4,6 +4,8 @@ sys.path.insert(0,'.') # Add this directory to path.
 import misc
 import HEX
 import Datamanager
+import network
+import torch
 #from misc import *
 
 # * run python Test/TestMethods.py -v[Optional]
@@ -164,6 +166,60 @@ class TestDatamanager(unittest.TestCase):
         datamanager = Datamanager.Datamanager("Data/test_dataset_update.csv")
         length = datamanager.get_buffer_size()
         self.assertEqual(length,11)
+
+class TestNetwork(unittest.TestCase):
+    # Input shape (N, 25)
+    # sum need an dimention too
+
+    def test_softmax(self):
+        import torch.nn.functional as F
+        #print("TestNetwork")
+        inputs = torch.tensor([[1,2,3,4,5],[1,2,3,4,5]]).float()
+        #print(F.softmax(inputs,dim=-1))
+        inputs = F.softmax(inputs,dim=-1)
+        #print(inputs)
+        inputs = torch.sum(inputs,dim=-1)
+        outputs = torch.tensor([1,1]).float()
+        #print(inputs,inputs.shape,outputs,outputs.shape)
+        #F.softmax()
+        self.assertListEqual(list(inputs.numpy()), list(outputs.numpy()))
+
+    def test_mse_loss(self):
+        # Bad loss functions: 
+        # cross_entropy_loss, nll_loss, multilabel_margin_loss, multi_margin_loss
+        # hinge_embedding_loss
+    
+        import torch.nn.functional as F
+        inputs = torch.tensor([[.1,.1,.1,.2,.5],[.4,.2,.1,.1,.2],[.5,.2,.1,.1,.1]]).float()
+        targets = torch.tensor([[.1,.1,.1,.2,.5],[.5,.2,.1,.1,.1],[.5,.2,.1,.1,.1]]).float()
+        mc_loss = network.MultiClassCrossEntropyLoss()
+        cce_loss = network.CategoricalCrossEntropyLoss()
+        rmse_loss = network.RootMeanSquareLoss()
+
+        mse_r = F.mse_loss(inputs,targets)
+        mse_r2 = F.mse_loss(inputs,targets,reduction='sum')
+        mc_r = mc_loss(inputs, targets)
+        cce_r = cce_loss(inputs, targets)
+        l1_r = F.l1_loss(inputs,targets)
+        l1a_r = F.l1_loss(inputs,targets,reduction='sum')
+        pois_r = F.poisson_nll_loss(inputs,targets,log_input=False, full=True)
+        rmse_r = rmse_loss(inputs, targets)
+        print("\nResults mse:{:.5f} mse_s:{:.5f} mc:{:.5f} cce:{:.5f} l1:{:.5f} l1a_r:{:.5f} poi:{:.5f} rmse:{:.5f}"
+            .format(mse_r,mse_r2,mc_r,cce_r,l1_r,l1a_r,pois_r, rmse_r))
+
+        targets_w = torch.tensor([[.5,.0,.1,.0,.1],[.0,.0,.3,.6,.1],[.5,.2,.1,.1,.1]]).float()
+
+        mse_r = F.mse_loss(inputs,targets_w)
+        mse_r2 = F.mse_loss(inputs,targets_w, reduction='sum')
+        mc_r = mc_loss(inputs, targets_w)
+        cce_r = cce_loss(inputs, targets_w)
+        l1_r = F.l1_loss(inputs,targets_w)
+        l1a_r = F.l1_loss(inputs,targets_w,reduction='sum')
+        pois_r = F.poisson_nll_loss(inputs,targets_w,log_input=False, full=True)
+        rmse_r = rmse_loss(inputs,targets_w)
+        print("\nResults mse:{:.5f} mse_s:{:.5f} mc:{:.5f} cce:{:.5f} l1:{:.5f} l1a_r:{:.5f} poi:{:.5f} rmse:{:.5f}"
+            .format(mse_r,mse_r2,mc_r,cce_r,l1_r,l1a_r,pois_r, rmse_r))
+
 
 
 if __name__=="__main__":

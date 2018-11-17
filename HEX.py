@@ -85,7 +85,7 @@ class HEX_Cell():
             return True # return that we won.
         #otherwise we need to update neighbours with a new state.
         
-        for neighbour in [neigh for neigh in self.neighbours if neigh.state == player]: # Update
+        for neighbour in [neigh for neigh in self.neighbours if neigh.state == player]: # Update all neighbrouring stats
             neighbour.update_neighbours(player,self.connected)
         # Now that we have updatet ourself, we need to check with the neighbours, find the one with the highest connections.
         
@@ -200,7 +200,7 @@ class HEX_State(State):
             if(self.board[x][y].update_state(self.player_turn)): # Tell cell to update it's value.
                 self.winner = self.player_turn # Set that someone won.
                 #print("!!!!!!!!!!! PLAYER {} WON !!!!!!!!!!!!!!".format(self.player_turn))
-            # * update state_array for NN input
+            # * update state_array
             one_hot = int_to_binary_rev(self.board[x][y].state, 2) # Return the state as a binary array.
             for v,value in enumerate(one_hot):
                 index = x*self.dimx*2+y*2+v # [0,1,2] -> [0,0,1,1,2,2]
@@ -224,13 +224,13 @@ class HEX_State(State):
         return legal_states
     
     def get_legal_actions_1d(self): # * to check with output of Neural Network. After the loss function. bc,we want to learn the rules too.
-        #Return legal actions as a 1d numpy array, each move as a and 0 or 1, depending on legality of move.
-        return self.legal_cells.reshape(1,self.dimx*self.dimy) # return as shape (1,dim*dim)
+        #Return legal actions as a 1d list, each move as a and 0 or 1, depending on legality of move.
+        return (self.legal_cells.ravel()).tolist()
 
     def get_board_1d(self):
         #return all cells as an array [R1,R2,R3,R4,R5]
         return self.board.ravel()
-
+    
     def get_state_as_input_nn(self): # Return this state as it should be input to the Neural Network.
         # State + PID
         # How can we go from an array of dimxdim to dimxdimx2 + 2 ?
@@ -474,3 +474,58 @@ class HEX(Game):
     
     def display_board(self):
         self.state.draw_board()
+
+def return_test(x=None):
+    if(x):
+        return True
+
+def cell_test():
+    if(return_test([True])):
+        print("True, True")
+    
+    if(return_test()):
+        print(", True")
+
+def hex_state_test():
+    hex = HEX(5)
+
+    #Change the game state.
+    legal_actions = hex.state.get_legal_actions()
+    print(len(legal_actions))
+    state = hex.state.board
+    for row in state:
+        print(row)
+    hex.play((0,0))
+    hex.play((3,3))
+    hex.play((0,1))
+    hex.play((0,2))
+    hex.play((1,1))
+    hex.play((1,2))
+    hex.play((2,1))
+    hex.play((2,3))
+    hex.play((3,1))
+    hex.play((4,1))
+    hex.play((4,0))
+    hex.play((1,3))
+    hex.play((3,2))
+    hex.play((0,3))
+    hex.play((4,2))
+    hex.play((0,4))
+    hex.play((4,3))
+    hex.play((1,4))
+    hex.play((4,4))
+    hex.state.show_board()
+
+    hex.display_board()
+
+    #for row in state:
+    #    for cell in row:
+    #        print(" {} ".format(cell.edge_v), end="")
+    #    print("")
+
+    #Create a complete game.
+#cell_test()
+
+
+
+#hex_state_test()

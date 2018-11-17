@@ -5,6 +5,10 @@ import torch.nn.init as init
 import torch.nn.functional as F # optimizer
 import torch.optim as optim
 import torch.nn.modules.loss as pyloss
+from torch.nn.modules import Module
+from torch.nn.functional import _Reduction
+from  torch.nn.modules.loss import _Loss
+
 import os
 import numpy as np
 from IPython.core.debugger import set_trace
@@ -13,8 +17,47 @@ import Datamanager
 
 import misc
 
+#class _Loss(Module):
+#    def __init__(self, size_average=None, reduce=None, reduction='elementwise_mean'):
+#        super(_Loss, self).__init__()
+#        if size_average is not None or reduce is not None:
+#            self.reduction = _Reduction.legacy_get_string(size_average, reduce)
+#        else:
+#            self.reduction = reduction
 
-class Module(nn.Module):
+
+
+class MultiClassCrossEntropyLoss(_Loss):
+    def forward(self, input, target):
+        loss = -torch.mean(torch.sum(torch.sum(torch.sum(target*torch.log(input), dim=-1), dim=-1), dim=-1))
+        return loss
+
+class CategoricalCrossEntropyLoss(_Loss):
+
+    def forward(self, input, target):
+        #print("Categorical Cross Entropy", input.shape, target.shape)
+        loss = target*torch.log(input) + (1-target)*torch.log(1-input)
+        loss = -torch.mean(torch.sum(torch.sum(loss,dim=-1),dim=-1),dim=-1)
+        #loss = -torch.mean(torch.sum(torch.sum(torch.sum(target*torch.log(input), dim=-1), dim=-1), dim=-1))
+        return loss
+
+class RootMeanSquareLoss(_Loss):
+    def forward(self, input, target):
+        return torch.sqrt(F.mse_loss(input, target))
+
+class TestLoss():
+    def __init__(self):
+        super(self).__init__()
+
+    def forward(self, input, target): # sum should be 1. and 
+        # What is the loss between target and input.
+        difference = abs(target - input)
+        #loss = -torch.mean(torch.sum(torch.sum(torch.sum(target*torch.log(input), dim=1), dim=1), dim=1))
+        return difference
+
+
+
+class Model(nn.Module):
 
     def __init__(self,insize = 52,outsize = 25, name="network"): # Define the network in detail
         super().__init__() 
@@ -22,13 +65,11 @@ class Module(nn.Module):
         self.insize = insize
         self.name = name # want each module to have an unique name when we save to file.
 
-        self.inL = nn.Linear(insize,80)
-        self.drop1 = nn.Dropout(p=0.2)
-        self.hL1 = nn.Linear(80,60)
-        self.drop2 = nn.Dropout(p=0.2)
-        self.hL2 = nn.Linear(60,40)
-        self.drop3 = nn.Dropout(p=0.2)
-        self.hL3 = nn.Linear(40,outsize)
+        self.inL = nn.Linear(insize,30)
+        #self.drop1 = nn.Dropout(p=0.2)
+        self.hL1 = nn.Linear(30,30)
+        #self.drop2 = nn.Dropout(p=0.2)
+        self.hL2 = nn.Linear(30,outsize)
         #self.outL = nn.Softmax(outsize) # output is only a board state.
 
     def forward(self, input):
@@ -36,11 +77,10 @@ class Module(nn.Module):
         x = self.inL(input) # put input in input layer
         #x = F.relu(x) # output activation.
         #x = self.drop1(x)
-        x = self.hL1(F.relu(x))
-        x = self.drop2(x)
+        #x = F.relu(x)
+        x = self.hL1(x)
+        #x = self.drop2(x)
         x = self.hL2(F.relu(x))
-        x = self.drop3(x)
-        x = self.hL3(x)
         x = F.softmax(x, dim=-1)
         #print("b",x)
         #x = F.sigmoid(x)
@@ -48,6 +88,7 @@ class Module(nn.Module):
         #print("a",x)
         #x = F.log_softmax(x,dim=1) # softmax the final output
         return x # Return output, whatever it is.
+    
     
     # Log_softmax -> Scale output between 0 and 1 + sum to 1
     #
@@ -71,6 +112,13 @@ class Module(nn.Module):
 
     # params; input:dim*dim+2 
     def get_action(self, input, legal_moves): #should return an specific action.
+        if(type(input) == list):
+            #print("LIST IN GET_ACTION")
+            input = torch.FloatTensor(input)
+        elif(input is np.ndarray):
+            print("INPUT IS ndarray")    
+            input = torch.from_numpy(input).float() 
+        #print(init)
         prediction =  self.evaluate(input) # * Return dim*dim vector.
         #Return argmax as touple.
         output = torch.Tensor.numpy(prediction.detach()) # convert to numpy array.
@@ -82,7 +130,7 @@ class Module(nn.Module):
         return action # Return greedy action.
 
 def train(model, casemanager_train:Datamanager, optimizer, 
-        loss_function, batch=10, iterations=1, gpu=False, casemanager_test:Datamanager=None):
+        loss_function, batch=10, iterations=1, gpu=False, casemanager_test:Datamanager=None,verbose=1):
     #train_loder is a training row,
     start = time.time()
     #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -95,10 +143,12 @@ def train(model, casemanager_train:Datamanager, optimizer,
         # We only train and show loss from this.
         
         for t in range(1,iterations+1): #Itterade dataset x times with batch_size("all") if epochs.
+            
             #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
             loss_train_i = train_batch(casemanager_train, 
             model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
-            print("itteration {} loss_train: {:.8f}".format(t, loss_train_i))
+            if(t % verbose == 0 or t == iterations + 1):
+                print("itteration {} loss_train: {:.8f}".format(t, loss_train_i))
             loss_train += loss_train_i
         return loss_train/iterations # * average loss
     else:
@@ -108,11 +158,10 @@ def train(model, casemanager_train:Datamanager, optimizer,
             model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
             loss_test_i = evaluate_test(casemanager_test, 
             model=model, loss_function=loss_function)
-            print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train_i, loss_test_i))
+            if(t % verbose == 0 or t == iterations + 1):
+                print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train_i, loss_test_i))
             loss_train += loss_train_i ; loss_test += loss_test_i
         return loss_train/iterations, loss_test/iterations # * Return average loss of both.
-
-
 
 
 class NetWork(): # Hold an model, and coresponding optimizer.
@@ -180,30 +229,33 @@ optimizer = optim.Adam(model.parameters(),
 #checkpoint = torch.load(checkpoint_path)
 
 def train_architecture_testing():
-    #torch.manual_seed(999) # set seeds
+    torch.manual_seed(999) # set seeds
     #np.random.seed(999)
     #Load datamanager for both files.
     dataset_train = Datamanager.Datamanager("Data/data_random.csv",dim=5)
     dataset_test = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
     
-    model = Module(insize=52, outsize=25, name="testing_network")
+    model = Model(insize=52, outsize=25, name="testing_network")
     print(model)
     # Create a model to train on.
-    optimizer = optim.Adam(model.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-08, weight_decay=1e-3)
-    #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0)
+    optimizer = optim.Adam(model.parameters(), lr=1e-2,betas=(0.9,0.999),eps=1e-6, weight_decay=1e-4)
+    #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0.1)
     #optimizer = optim.RMSprop(model.parameters(), lr=0.05,alpha=0.99,eps=1e-8,weight_decay=0.1)
     #optimizer = optim.Adagrad(model.parameters(), lr=1e-3, lr_decay=0,weight_decay=0.1)
 
     # * Loss functions which multitargets
     #loss_function = pyloss.MultiLabelMarginLoss()
     #loss_function = pyloss.MSELoss()
+    loss_function = pyloss.MSELoss(reduction='sum') # a bit better
     #loss_function = pyloss.L1Loss()
-    loss_function = pyloss.SmoothL1Loss()
+    #loss_function = pyloss.SmoothL1Loss()
+    #loss_function = pyloss.NLLLoss2d()
+    #loss_function = pyloss.MultiLabelSoftMarginLoss()
+    #loss_function = CategoricalCrossEntropyLoss()
 
-
-    loss_train, loss_T = train(model,batch=40, iterations=1000,
-    casemanager_train=dataset_train,casemanager_test=dataset_test,optimizer = optimizer,loss_function=loss_function)
-    model.store(epoch=2000, optimizer = optimizer, loss = loss_train)
+    loss_train, loss_T = train(model,batch=100, iterations=10000,
+    casemanager_train=dataset_train,casemanager_test=dataset_test,optimizer = optimizer,loss_function=loss_function,verbose=10)
+    model.store(epoch=10000, optimizer = optimizer, loss = loss_train)
 
 #torch.cuda.manual_seed_all(999)
 
@@ -214,7 +266,7 @@ def test_network():
     #torch.backends.cudnn.deterministic = True
     dataset_test = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
     dataset_train = Datamanager.Datamanager("Data/data_r_train.csv",dim=5)
-    model = Module(dataset_test.inputs, dataset_test.outputs)
+    model = Model(dataset_test.inputs, dataset_test.outputs)
     model.apply(weights_init)
 
     #optimizer = optim.Adam(model.parameters(), lr=5e-4,betas=(0.9,0.999),eps=1e-08,weight_decay=1e-4)
@@ -226,7 +278,8 @@ def test_network():
     #loss_function = nn.BCEWithLogitsLoss()
     #loss_function = nn.KLDivLoss()
     #loss_function = nn.NLLLoss2d
-    loss_function = nn.MultiLabelMarginLoss()
+    #loss_function = nn.MultiLabelMarginLoss()
+    loss_function = pyloss.MSELoss(reduction='sum')
     #train(casemanager_train=dataset_train,casemanager_test=dataset_test, model=model,optimizer=optimizer,loss_function=loss_function,iterations=200,batch=50)
     
     data_input, data_target = dataset_test.return_batch(1)
