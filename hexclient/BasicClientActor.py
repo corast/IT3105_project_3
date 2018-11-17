@@ -28,11 +28,14 @@ class BasicClientActor(BasicClientActorAbs):
         state_board = state[1:] # only select board state.
         legal_states = misc.get_legal_states(state_board) # Legal states.
 
-        state_board = misc.int_board_to_network_board(state_board)
+        state_board = misc.int_board_to_network_board(state_board) # Return [1,0,0] to [1,0,0,0,0,0]
 
-        PID = misc.int_to_binary_rev(state[0]) # player
+        PID = misc.int_to_binary_rev(state[0]) # add player ID to the front.
 
         state_board.extend(PID) # Add player id to network.
+
+        # TODO: turn state into an tensor object for network.
+        print(type(state_board))
 
         next_move = ANET.get_action(state_board, legal_states)
 
@@ -156,8 +159,8 @@ class BasicClientActor(BasicClientActorAbs):
 
 if __name__ ==  '__main__':
     # TODO: add flexability to network creation.
-    model = network.Module(insize = 52, outsize = 25, name="network")
-    ANET = Actor(model = model, filepath = "models/testing_network_2000")
+    model = network.Model(insize = 52, outsize = 25, name="network")
+    ANET = Actor(model = model, filepath = "models/testing_network_10000")
     bsa = BasicClientActor(verbose=True)
     bsa.connect_to_server()
 
