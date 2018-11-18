@@ -83,3 +83,20 @@ def get_legal_states(board): # [1,0,0,1] 1's and 2's
         else:
             legal_moves.append(0)
     return np.array(legal_moves)
+
+def find_models(name):
+    # Look for network with similar name with different ending. E.g. TESTNET_xxxx
+    import glob
+    import os
+    # Find every file in directory of models with same name
+    result = glob.glob("models/"+name+"*")
+    if(len(result) == 0):
+        return None
+    result_2 =[x.split("_") for x in result]
+    # We need to use the second index to rank results.
+    result_3 = max(result_2,key=lambda x:int(x[1]))
+    path = "_".join(result_3)
+    if(os.path.isfile("_".join(result_3))):
+        return path
+    else:
+        print("{} is not a regular file".format(path))

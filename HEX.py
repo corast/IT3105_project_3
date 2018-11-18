@@ -225,7 +225,7 @@ class HEX_State(State):
     
     def get_legal_actions_1d(self): # * to check with output of Neural Network. After the loss function. bc,we want to learn the rules too.
         #Return legal actions as a 1d list, each move as a and 0 or 1, depending on legality of move.
-        return (self.legal_cells.ravel()).tolist()
+        return self.legal_cells.ravel()
 
     def get_board_1d(self):
         #return all cells as an array [R1,R2,R3,R4,R5]
@@ -474,58 +474,3 @@ class HEX(Game):
     
     def display_board(self):
         self.state.draw_board()
-
-def return_test(x=None):
-    if(x):
-        return True
-
-def cell_test():
-    if(return_test([True])):
-        print("True, True")
-    
-    if(return_test()):
-        print(", True")
-
-def hex_state_test():
-    hex = HEX(5)
-
-    #Change the game state.
-    legal_actions = hex.state.get_legal_actions()
-    print(len(legal_actions))
-    state = hex.state.board
-    for row in state:
-        print(row)
-    hex.play((0,0))
-    hex.play((3,3))
-    hex.play((0,1))
-    hex.play((0,2))
-    hex.play((1,1))
-    hex.play((1,2))
-    hex.play((2,1))
-    hex.play((2,3))
-    hex.play((3,1))
-    hex.play((4,1))
-    hex.play((4,0))
-    hex.play((1,3))
-    hex.play((3,2))
-    hex.play((0,3))
-    hex.play((4,2))
-    hex.play((0,4))
-    hex.play((4,3))
-    hex.play((1,4))
-    hex.play((4,4))
-    hex.state.show_board()
-
-    hex.display_board()
-
-    #for row in state:
-    #    for cell in row:
-    #        print(" {} ".format(cell.edge_v), end="")
-    #    print("")
-
-    #Create a complete game.
-#cell_test()
-
-
-
-#hex_state_test()

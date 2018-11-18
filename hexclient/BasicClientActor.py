@@ -7,6 +7,7 @@ sys.path.insert(0, parent_dir)
 from Actor import Actor
 import network
 import misc
+import torch.nn as nn
 #import Actor.Actor as Actor
 
 class BasicClientActor(BasicClientActorAbs):
@@ -156,8 +157,9 @@ class BasicClientActor(BasicClientActorAbs):
 
 if __name__ ==  '__main__':
     # TODO: add flexability to network creation.
-    model = network.Model(insize = 52, outsize = 25, name="network")
-    ANET = Actor(model = model, filepath = "models/testing_network_10000")
+    #model = network.Model(insize = 52, outsize = 25, name="network")
+    model = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,60), nn.ReLU(), nn.Linear(60,25), nn.Softmax(dim=-1), name="rms_mod",filepath="../models/rms_mod_10000")
+    ANET = Actor(model = model)
     bsa = BasicClientActor(verbose=True)
     bsa.connect_to_server()
 

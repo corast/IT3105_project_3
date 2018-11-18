@@ -151,9 +151,9 @@ class MCTS():
         # Player turn should be P.
         # We need to create new games of nim for each starting player.
 
-    def play_batch_with_training(self, optimizer, loss_function, games, training_size, k, num_sims, init_data_games=0, data_sims = 0, epoch=0, start_player=1, iterations=10, batch=30): # * Function to train for each batch.
+    def play_batch_with_training(self, optimizer, loss_function, games, training_frequency, storage_frequency, num_sims, init_data_games=0, data_sims = 0, epoch=0, start_player=1, iterations=10, batch=30): # * Function to train for each batch.
         # batch_size is number of games we play, num_sims is seconds we simulate for each move.
-        # k is how often we save an agent. training_size is how many games between training.
+        # storage_frequency is how often we save an agent. training_frequency is how many games between training.
         # If batch is 1, we train after each game, otherwise we choose.
         # We also don't want to start training until buffer is filled with random data.
         if(start_player < 1 or start_player > 3):
@@ -176,7 +176,11 @@ class MCTS():
         if(variables.verbose > variables.play):
             print("Start training with self play using policy network")
 
-        training_count = 0 # Count number of times we have trained, to easily check if needing to store.
+        training_count = epoch # Count number of times we have trained, to easily check if needing to store.
+        loss_history = [] # Store previous losses
+
+        #scheduler = torch.optim.lr_scheduler(optimizer,step_size = 30, )
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
         for game in range(1+epoch, games + 1 + epoch): # number of games we play
             print("Game {}".format(game))
@@ -186,13 +190,19 @@ class MCTS():
 
             sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims) # get last state of game.
             # Check winner.
-            if(game % training_size == 0): # We want to train between every game?
+            if(game % training_frequency == 0): # We want to train between every game?
                 #We train.
                 loss = network.train(self.rollout_policy,casemanager_train=self.datamanager, optimizer=optimizer, loss_function=loss_function, iterations=iterations,batch=batch)
-                print("Epoch {} loss {:.8f}".format(game, loss))
+                print("Epoch {} loss {:.8f} lr:{}".format(game, loss,optimizer.param_groups[0]["lr"]))
+                loss_history.append(loss) # Add current loss to history.
+                scheduler.step(loss)
+                #print(optimizer.param_groups[0]["lr"])
+                # collect the last x losses from history.
+
+
                 training_count += 1 # update training count
                 # Check if we want to store this trained policy network. 
-                if(training_count % k == 0): # store every x training times.
+                if(training_count % storage_frequency == 0): # store every x training times.
                     print("Storing network...")
                     self.rollout_policy.store(epoch=training_count, optimizer = optimizer, loss = loss, datapath=self.datamanager.filepath)
                     # We need to save our epoch. networkName_0, networkName_1, networkName_2, etc.

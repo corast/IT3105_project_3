@@ -45,12 +45,27 @@ def check_integer(max):
 def play_hex(dim): # TODO: init start player etc.
     return HEX(dim)
 
-def ANET():
+def ANET(name): # TODO FIX
     input_dim = (args.dimentions*args.dimentions*2)+2
     target_dim = args.dimentions*args.dimentions
-    return network.Model(insize=input_dim,outsize=target_dim,name="TESTNET")
+    return network.Model(insize=input_dim,outsize=target_dim,name=name)
 
+def CUSTON_NET(name):
+    input_dim = (args.dimentions*args.dimentions*2)+2
+    target_dim = args.dimentions*args.dimentions
+    model = network.Model(
+        nn.Linear(input_dim, 40),nn.ReLU(),
+        nn.Linear(40,target_dim), nn.Softmax(dim=-1))
+    return model
 
+def HEX_NET(name):
+    input_dim = (args.dimentions*args.dimentions*2)+2
+    target_dim = args.dimentions*args.dimentions
+    model = network.Model(
+        nn.Linear(input_dim, 70), nn.ReLU(),
+        nn.Linear(70,50), nn.ReLU(), 
+        nn.Linear(50,target_dim), nn.Softmax(dim=-1), name=name)
+    return model
 
 FUNCTION_MAP = {'NIM' : "play_nim",
                 'HEX' : play_hex}
@@ -82,14 +97,19 @@ if __name__=="__main__":
     subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help"
                     ,required=True)
     parser_a = subparsers.add_parser("TRAIN")
-    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=1,
+    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=5,
                     type=check_positive)
-    parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=30,
+    parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=100,
                     type=check_positive)
+    parser_a.add_argument("-sf","--storage_frequency",help="how often we store a mode, w.r.t. training", default=10,
+                    type=check_positive)
+    parser_a.add_argument("-tf","--training_frequency",help="how often we train, w.r.t games", default=1,
+                    type=check_positive)
+    
 
-    parser_a.add_argument("-ig","--init_games",help="number of games we init random data", default=0,
+    parser_a.add_argument("-ig","--init_games",help="number of games we init random data", default=10,
                     type=check_positive)
-    parser_a.add_argument("-is","--init_sims",help="number of simulations we init random data", default=1000,
+    parser_a.add_argument("-is","--init_sims",help="number of simulations we init random data", default=5000,
                     type=check_positive)
 
     args = parser.parse_args()
@@ -97,11 +117,8 @@ if __name__=="__main__":
     game = None # Init game.
     variables.verbose = args.verbose # set global verbose rate.
 
-
     #Can only play hex.
     game = play_hex(dim=args.dimentions)
-
-
 
     # Handle action arg
     #action = variables.action.get(args.action) # None is default in our case.
@@ -109,13 +126,13 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/data_test_18nov.csv",dim=args.dimentions)
+    datamanager = Datamanager("Data/data_hex_18nov.csv",dim=args.dimentions)
     
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = ANET() # Use default values
+            rollout_policy = HEX_NET("HEXNET") # Use default values
             rollout_policy.apply(network.weights_init) # init weights and biases.
             #TODO: handle continue training from file.
             mcts = MCTS(node=root, datamanager=datamanager,
@@ -131,12 +148,24 @@ if __name__=="__main__":
             batch = args.batch_size
             init_games = args.init_games
             init_sims = args.init_sims
-
-            optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-2,betas=(0.9,0.999),eps=1e-6, weight_decay=1e-4)
+            storage_frequency = args.storage_frequency
+            training_frequency = args.training_frequency
+            epoch = 0 # rollout_policy
+            optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             #loss_function = nn.MultiLabelMarginLoss()
             loss_function = pyloss.MSELoss(reduction='sum') # a bit better
-            mcts.play_batch_with_training(optimizer=optimizer,
-            loss_function=loss_function,games=games,training_size=1, k=10, num_sims=args.num_sims,
+
+            # Load previous model from file if exists.
+            if(rollout_policy is not None):
+                name = rollout_policy.name
+                path = misc.find_models(name)
+                if(path is not None):
+                    # Load model from path.
+                    loss, epoch = rollout_policy.load_model(path)
+                    print("Loading self from path \"{}\" at epoch {}".format(path, epoch))
+        
+            mcts.play_batch_with_training(optimizer=optimizer,epoch=epoch,
+            loss_function=loss_function,games=games,training_frequency=training_frequency, storage_frequency=storage_frequency, num_sims=args.num_sims,
             iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games)
         else: # Assume we just want to play
             mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
@@ -147,7 +176,6 @@ if __name__=="__main__":
             
     else:
         raise ValueError("No game initiated")
-
 
 # Loss functions:
 # mse_loss and mse_loss
