@@ -1,6 +1,5 @@
 # Controller 
 #from GameSimulator import *  # Not used..
-from NIM import *
 from HEX import *
 import argparse
 import variables
@@ -10,6 +9,7 @@ from MCTS import *
 #pytorch
 import torch.optim as optim
 import torch.nn as nn
+import torch.nn.modules.loss as pyloss
 
 #torch.manual_seed(2809)
 #np.random.seed(2809)
@@ -41,23 +41,20 @@ def check_integer(max):
             #setattr(args, self.dest, values)
     return customAction
 
-def play_nim(max_pieces, num_pieces):
-    return NIM(max_pieces,num_pieces) # Return NIM game.
 
 def play_hex(dim): # TODO: init start player etc.
     return HEX(dim)
 
 def ANET():
-    return network.Module(insize=52,outsize = 25,name="ANET")
+    input_dim = (args.dimentions*args.dimentions*2)+2
+    target_dim = args.dimentions*args.dimentions
+    return network.Model(insize=input_dim,outsize=target_dim,name="TESTNET")
 
 
 
-FUNCTION_MAP = {'NIM' : play_nim,
+FUNCTION_MAP = {'NIM' : "play_nim",
                 'HEX' : play_hex}
 
-
-    # g = num_sims
-    #
 if __name__=="__main__":
     #Parse command line arguments
     parser = argparse.ArgumentParser(
@@ -70,82 +67,84 @@ if __name__=="__main__":
                         required=True, type=check_positive)
     parser.add_argument("-p","--start_player", default=1,choices=[1,2,3],
                         type=check_positive, required=True)
-    parser.add_argument("-b","--batch",help="number of games we play", default=1,
+    parser.add_argument("-g","--games",help="number of games we play", default=1,
                     type=check_positive)
-    
-    parser.add_argument("-a","--action", choices=["train","play","play_tourn","test","data"],
-                        required=True, type=str) 
-
+    """parser.add_argument("-a","--action", choices=["train","play","play_tourn","test","data"],
+                        required=True, type=str)  """
     parser.add_argument("-r","--rollout",choices=["random","ANET"],
                         default = "random") 
+    parser.add_argument("-d","--dimentions", type=check_positive, help="Dimention of board", 
+                default=5, required=False)
     parser.add_argument("-tl","--time_limit", default = False, type=bool,
                                 required=False)
 
-    subparsers = parser.add_subparsers(title="game", dest="game",help="sub-game help"
+        # dest is where we store string we chose as action, to use later.
+    subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help"
                     ,required=True)
-    
-    #command nim 
-    parser_a = subparsers.add_parser("NIM",help="NIM help")
-    parser_a.add_argument("-m","--max_pieces", default=3,
-                        required=True,type=check_positive,
-                        help="Max number of pieces we can pick in each state")
-    parser_a.add_argument("-n","--num_pieces", default=10,
-                        required=True,type=check_positive,
-                        help="Total number of pieces to begin with")
+    parser_a = subparsers.add_parser("TRAIN")
+    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=1,
+                    type=check_positive)
+    parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=30,
+                    type=check_positive)
 
-    #command other game..
-    parser_b = subparsers.add_parser("HEX",help="HEX help")
-    parser_b.add_argument("-d","--dimentions", type=check_positive, help="Dimention of board", 
-                default=5, required=False)
+    parser_a.add_argument("-ig","--init_games",help="number of games we init random data", default=0,
+                    type=check_positive)
+    parser_a.add_argument("-is","--init_sims",help="number of simulations we init random data", default=1000,
+                    type=check_positive)
 
     args = parser.parse_args()
 
     game = None # Init game.
     variables.verbose = args.verbose # set global verbose rate.
 
-    if(args.game == "NIM"):
-        #handle nim
-        #check if m/max_pieces > n/num_pieces
-        if(args.max_pieces > args.num_pieces): 
-            raise ValueError("max_pieces must be smaller than num_pieces in game")
-        elif(args.max_pieces == 1):
-            raise ValueError("max_pieces must be greater than 1")
-        game = play_nim(max_pieces=args.max_pieces, num_pieces=args.num_pieces)
-    elif(args.game == "HEX"):
-        game = play_hex(dim=args.dimentions)
+
+    #Can only play hex.
+    game = play_hex(dim=args.dimentions)
+
+
 
     # Handle action arg
-    action = variables.action.get(args.action) # None is default in our case.
-    rollout = variables.rollout_policy.get(args.rollout)
-    time_limit = args.time_limit # get boolean if something set
-    if(action is None):
-        raise ValueError("No action selected")
+    #action = variables.action.get(args.action) # None is default in our case.
+    #rollout = variables.rollout_policy.get(args.rollout)
+    #time_limit = args.time_limit # get boolean if something set
+    games = args.games
     
-    if(args.rollout == "ANET"):
-        # We need to make our network.
-        rollout_policy = ANET() # Use default values
-        rollout_policy.apply(network.weights_init) # init weights and biases.
-
+    datamanager = Datamanager("Data/data_test_18nov.csv",dim=args.dimentions)
+    
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-
-            mcts = MCTS(node=root, action=action, datamanager=Datamanager("Data/data_random.csv", 
-                dim=args.dimentions),time_limit=time_limit, rollout_policy=rollout_policy)
+            rollout_policy = ANET() # Use default values
+            rollout_policy.apply(network.weights_init) # init weights and biases.
+            #TODO: handle continue training from file.
+            mcts = MCTS(node=root, datamanager=datamanager,
+                time_limit=args.time_limit, rollout_policy=rollout_policy)
         else:
-            mcts = MCTS(node=root, action=action, 
-            datamanager=Datamanager("Data/data_random.csv", dim=args.dimentions),time_limit=time_limit) 
+            mcts = MCTS(node=root, datamanager=datamanager, 
+                time_limit=args.time_limit) 
         #mcts.simulate_best_action(root,10)
-        if( action == variables.action.get("train")):
-            #We want to train isntead of play batch.
-            #optimizer = optim.SGD(rollout_policy.parameters(), lr=5e-4,momentum=0.01, dampening=0)
-            optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8,weight_decay=0)
-            loss_function = nn.MultiLabelMarginLoss()
+        if(args.sub_action == "TRAIN"): # We want to train against ourself.
+            action = variables.action.get("train")
+            mcts.gather_data = True
+            iterations = args.iterations
+            batch = args.batch_size
+            init_games = args.init_games
+            init_sims = args.init_sims
+
+            optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-2,betas=(0.9,0.999),eps=1e-6, weight_decay=1e-4)
+            #loss_function = nn.MultiLabelMarginLoss()
+            loss_function = pyloss.MSELoss(reduction='sum') # a bit better
             mcts.play_batch_with_training(optimizer=optimizer,
-            loss_function=loss_function,batch_size=100, training_size=1,k=1, num_sims=args.num_sims)
+            loss_function=loss_function,games=games,training_size=1, k=10, num_sims=args.num_sims,
+            iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games)
         else: # Assume we just want to play
-            mcts.play_batch(batch=args.batch,num_sims=args.num_sims,start_player=args.start_player)
+            mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
+            
+
+            #optimizer = optim.SGD(rollout_policy.parameters(), lr=5e-4,momentum=0.01, dampening=0)
+            #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8,weight_decay=0)
+            
     else:
         raise ValueError("No game initiated")
 

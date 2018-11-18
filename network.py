@@ -100,33 +100,54 @@ class Model(nn.Module):
         self.eval() # Turn off training, etc.
         return self.forward(input)
 
-    def store(self,epoch,optimizer,loss): # Need model, and optimizer
+    def store(self,epoch,optimizer,loss, datapath=""): # Need model, and optimizer
         #Store ourself in a file for later use
-        print("Storing ourself to file...")
         save_path = "models/"+ self.name + "_" + str(epoch) # save a new network with an unique ID, name + epoch
         torch.save({'epoch':epoch,
                     'model_state_dict':self.state_dict(),
                     'optimizer_state_dict':optimizer.state_dict(),
-                    'loss':loss
+                    'loss':loss,
+                    'datapath':datapath,
                     },save_path)
 
+    def load_model(self, path, optimizer=None):
+        if os.path.isfile(path):
+            #model = model # TheModelClass(*args, **kwargs)
+            optimizer = optimizer # TheOptimizerClass(*args, **kwargs)
+            checkpoint = torch.load(path)
+            self.load_state_dict(checkpoint['model_state_dict'])
+            if(optimizer is None):  # Only if we want to keep training.
+                pass
+            else:
+                optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            epoch = checkpoint['epoch']
+            loss = checkpoint['loss']
+            return optimizer, loss, epoch # Return all this info
+        else:
+            print(" => no checkpoint found at '{}'".format(path))
+
+    
     # params; input:dim*dim+2 
     def get_action(self, input, legal_moves): #should return an specific action.
-        if(type(input) == list):
-            #print("LIST IN GET_ACTION")
-            input = torch.FloatTensor(input)
-        elif(input is np.ndarray):
-            print("INPUT IS ndarray")    
-            input = torch.from_numpy(input).float() 
-        #print(init)
+        if(not (type(input) == torch.Tensor)):
+            print(type(input),"is not a tensor")
         prediction =  self.evaluate(input) # * Return dim*dim vector.
         #Return argmax as touple.
         output = torch.Tensor.numpy(prediction.detach()) # convert to numpy array.
         #legal_moves = rollout_state.get_legal_actions_bool() # 1 is legal, 0 is illegal.
-        dim = np.sqrt(len(legal_moves))
+        dim = np.sqrt(len(legal_moves)).astype(int)
+
         dims = (dim,dim)
         actions = np.multiply(output, legal_moves) # Need to select the highest value from this one.
-        action = np.unravel_index(np.argmax(actions),(5,5))
+
+        zeros = np.count_nonzero(actions)
+        if(zeros == 0):
+            print("We don't know what to do ...")
+            normalize_legal_moves = misc.normalize_array(legal_moves) # Weights for moves.
+            dims = (np.sqrt(len(legal_moves)),np.sqrt(len(legal_moves)))
+            return np.unravel_index(np.random.choice(range(len(legal_moves)), p=normalize_legal_moves), dims=dims)
+
+        action = np.unravel_index(np.argmax(actions),dims)
         return action # Return greedy action.
 
 def train(model, casemanager_train:Datamanager, optimizer, 
@@ -172,19 +193,7 @@ class NetWork(): # Hold an model, and coresponding optimizer.
         self.output_size = output_size
 
     
-def load_model(path, model, optimizer=None):
-    if os.path.isfile(path):
-        model = model # TheModelClass(*args, **kwargs)
-        optimizer = optimizer # TheOptimizerClass(*args, **kwargs)
-        checkpoint = torch.load(path)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        if(not optimizer is None):  # Only if we want to keep training.
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        epoch = checkpoint['epoch']
-        loss = checkpoint['loss']
-        return model, optimizer, loss, epoch # Return all this info
-    else:
-        print(" => no checkpoint found at '{}'".format(path))
+
 
 
 def weights_init(model): # Will reset states if called again.

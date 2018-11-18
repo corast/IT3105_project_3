@@ -5,15 +5,16 @@
 import network
 import numpy as np
 import misc
+import torch
 
 class Actor():
-    def __init__(self,model=None, filepath=None):
+    def __init__(self, model=None, filepath=None):
         if(model is None):
             #actor is simply random.
             self.network = False
         else:
             if(not filepath is None): # Load weights from file, otherwise 
-                network.load_model(filepath,model)
+                model.load_model(filepath)
             else: # Randomly init weights for untrained network.
                 model.apply(network.weights_init)
             # TODO: set action
@@ -22,13 +23,15 @@ class Actor():
 
     def get_action(self, board_state, legal_moves): # board_state dim*dim+2
         if(self.network):
-            #Use the network to play.
-            # Need to transform legal moves, to an tensor.
-            dim = len(legal_moves)
-            # Want to create an (1,dim) as legal moves.
-            # board_state also need to be fixed.
-
+            if(type(board_state) == list):
+                #print("LIST IN GET_ACTION")
+                board_state = torch.FloatTensor(board_state)
+            elif(type(board_state) == np.ndarray):
+                #print("INPUT IS ndarray")    
+                board_state = torch.from_numpy(board_state).float() 
+            #Assumes it is an tensor.
             return self.model.get_action(board_state, legal_moves)
+
         # The actor make plays on an game, based on the game.
         # Should handle any game
         # This could either be MTC + ANN, or an interface (Keith's) or an player via terminal
@@ -41,4 +44,16 @@ class Actor():
             return np.unravel_index(np.random.choice(range(len(legal_moves)), p=normalize_legal_moves), dims=dims)
 
 #ANET = Actor(model = network.Module(insize = 52, outsize = 25, name="network"),filepath = "models/testing_network_2000")
+from base.Game import Game
+def tournament(game:Game, model=[], filepaths=[], random=False): # We need to load a model from path.
+    actors = []
+    for anet,path in model,filepaths:
+        actors.append(Actor(model=anet,filepath=path))
 
+
+    #Play tournament.
+    # round robin tournament.
+
+
+    # We want to create 
+    pass

@@ -34,9 +34,6 @@ class BasicClientActor(BasicClientActorAbs):
 
         state_board.extend(PID) # Add player id to network.
 
-        # TODO: turn state into an tensor object for network.
-        print(type(state_board))
-
         next_move = ANET.get_action(state_board, legal_states)
 
         # This is an example player who picks random moves. REMOVE THIS WHEN YOU ADD YOUR OWN CODE !!

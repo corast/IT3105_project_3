@@ -8,11 +8,12 @@ import time
 
 
 class MCTS():
-    def __init__(self, node:Node, action=1, datamanager=None, rollout_policy=None, random_rollout=False, greedy=False, time_limit = False):
+    def __init__(self, node:Node, datamanager=None, rollout_policy=None, random_rollout=False, greedy=False, time_limit = False, gather_data=False):
         self.root = node # Set root node of MCTS
             #TODO: use memory states, intra episode or not
         #self.memory_state = memory_state # How whether or not we want to keep memory in simulation.
-        self.action = action # {1:play, 2:play_tourn, 3:train, 4:data,5:test}
+        #self.action = action # {1:play, 2:play_tourn, 3:train, 4:data,5:test}
+        self.gather_data = gather_data
         self.rollout_policy = rollout_policy
         self.random_rollout = random_rollout # overwrite network policy
         self.greedy = greedy # If we want an greedy rollout policy or not, with respect to ANET
@@ -70,7 +71,7 @@ class MCTS():
         else:
             for i in range(0, num_sims): # M = num_sims    
                 leaf = self.tree_policy(node, root_player) # Return leaf node we are going to use for rollout from node state.
-                if(self.rollout_policy is None): # Check if we only want the data.
+                if(self.rollout_policy is None or self.random_rollout): # Check if we only want the data.
                     winner = leaf.rollout(root_player)
                 else: # We want to use another policy for rollout.
                     #TODO: pass the policy to the rollout function.
@@ -85,10 +86,10 @@ class MCTS():
         # TODO: handle creating the case from simulation results. i.e. get number of visits to each node.
         # * [(0,0)=3,(0,1)=1,(0,2)=40,..., PID]
         # We need to create a seperate node.best_child function for when we actually selects a move, since we might want to get the data aswell.
-        if(self.action == variables.action.get("data") or self.action == variables.action.get("train")): # * Whether not we need to add data to buffer or not.
+        if(self.gather_data): # * Whether not we need to add data to buffer or not.
             victor,data = node.get_best_child(root_player, data=True) # Get best state node from tree.
             #Store the data.
-            self.datamanager.update_csv(data = [data]) # Add data row to buffer. 
+            self.datamanager.update_csv_limit(data = [data]) # Add data row to buffer. 
         else: # We dont do 
             victor = node.get_best_child(root_player) # Get best state node from tree.
         return victor # Return best state node, which we want to keep.
@@ -118,13 +119,13 @@ class MCTS():
         return node # return termal node, which is the final state of our game.
 
     #TODO: had self.root.is_termal_node(), and self.root = Node(game=new_state.game,parent=self.root, action=new_state.action, node_depth=new_state.node_depth)
-    def play_batch(self, num_sims, batch, start_player=1,verbose=True):
+    def play_batch(self, num_sims, games, start_player=1,verbose=True):
         if(start_player < 1 or start_player > 3):
             raise ValueError('Value of {} as P is not supported'.format(start_player))
         
         wins = [0,0] # Keep track of amount of wins for both players,
         start_state = [0,0] # Keep track of amount of times each player start a game.
-        for game in range(1,batch+1): # from 1 to batch plays.
+        for game in range(1,games+1): # from 1 to batch plays.
             sim_node = copy.deepcopy(self.root) # create a copy of the start state.
             sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
 
@@ -144,13 +145,13 @@ class MCTS():
                 wins[1] += 1
         if(variables.verbose >= variables.result and verbose):
             print("First moves: Player_1: {} Player_2: {}".format(start_state[0], start_state[1]))
-            p_p1 = wins[0]/batch
-            p_p2 = wins[1]/batch
-            print("Results {} games: Player_1: {:.2f}%({}), Player_2: {:.2f}% ({})".format(batch, p_p1*100, wins[0], p_p2*100, wins[1]))
+            p_p1 = wins[0]/games
+            p_p2 = wins[1]/games
+            print("Results {} games: Player_1: {:.2f}%({}), Player_2: {:.2f}% ({})".format(games, p_p1*100, wins[0], p_p2*100, wins[1]))
         # Player turn should be P.
         # We need to create new games of nim for each starting player.
 
-    def play_batch_with_training(self, optimizer, loss_function, batch_size, training_size, k, num_sims, init_data_batch=0, data_sims = 0, epoch=0, start_player=1): # * Function to train for each batch.
+    def play_batch_with_training(self, optimizer, loss_function, games, training_size, k, num_sims, init_data_games=0, data_sims = 0, epoch=0, start_player=1, iterations=10, batch=30): # * Function to train for each batch.
         # batch_size is number of games we play, num_sims is seconds we simulate for each move.
         # k is how often we save an agent. training_size is how many games between training.
         # If batch is 1, we train after each game, otherwise we choose.
@@ -167,16 +168,17 @@ class MCTS():
         # If size != 0, it means we don't train from scratch.
         # If size == 0, we should do some random rollouts to gather some data, before training.
         # Play 10 games, with random rollout, 800 sims per move -> 800*moves rollout, should be an OK aproximation to begin with.
-        if(size == 0 and init_data_batch != 0 and data_sims != 0): # means we want to gather som random data firstly.
+        if(size == 0 and init_data_games != 0 and data_sims != 0): # means we want to gather som random data firstly.
             self.random_rollout = True
-            self.play_batch(num_sims = data_sims, batch=init_data_batch, start_player=3 ,verbose=False) # Automaticly use the policy if availible for a move.
+            self.play_batch(num_sims = data_sims, games=init_data_games, start_player=3, verbose=False) # Automaticly use the policy if availible for a move.
             self.random_rollout = False
-        
-
+            #TODO: Use random here, even if ramdom_rollout is availible.
+        if(variables.verbose > variables.play):
+            print("Start training with self play using policy network")
 
         training_count = 0 # Count number of times we have trained, to easily check if needing to store.
 
-        for game in range(1+epoch, batch_size + 1 + epoch): # number of games we play
+        for game in range(1+epoch, games + 1 + epoch): # number of games we play
             print("Game {}".format(game))
             sim_node = copy.deepcopy(self.root) # Copy root state of game. # So that we have a starting point to simulate from.
             sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
@@ -186,16 +188,14 @@ class MCTS():
             # Check winner.
             if(game % training_size == 0): # We want to train between every game?
                 #We train.
-                loss = network.train(self.rollout_policy,casemanager_train=self.datamanager, optimizer=optimizer, loss_function=loss_function,iterations=10)
+                loss = network.train(self.rollout_policy,casemanager_train=self.datamanager, optimizer=optimizer, loss_function=loss_function, iterations=iterations,batch=batch)
                 print("Epoch {} loss {:.8f}".format(game, loss))
                 training_count += 1 # update training count
                 # Check if we want to store this trained policy network. 
                 if(training_count % k == 0): # store every x training times.
-                    print("Storing network")
-                    self.rollout_policy.store(epoch=training_count, optimizer = optimizer, loss = loss)
+                    print("Storing network...")
+                    self.rollout_policy.store(epoch=training_count, optimizer = optimizer, loss = loss, datapath=self.datamanager.filepath)
                     # We need to save our epoch. networkName_0, networkName_1, networkName_2, etc.
-
-
 
 """ 
     * Backprogagate

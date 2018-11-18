@@ -6,6 +6,7 @@ import HEX
 import Datamanager
 import network
 import torch
+import numpy as np
 #from misc import *
 
 # * run python Test/TestMethods.py -v[Optional]
@@ -37,6 +38,10 @@ class TestMics(unittest.TestCase):
         self.assertAlmostEqual(sum(misc.normalize_array([0,1,2,0])),1.00)
         self.assertListEqual(misc.normalize_array([0,1,200,100]),[0,1/301,200/301,100/301])
         self.assertAlmostEqual(sum(misc.normalize_array([0,1,200,100])),1.00)
+    
+    def test_legal_moves(self):
+        board = [1,0,2,1,2,1]
+        self.assertListEqual(list(misc.get_legal_states(board)),[0,1,0,0,0,0])
 
 class TestHEX(unittest.TestCase):
     def test_board_to_nn_input(self):
@@ -204,8 +209,8 @@ class TestNetwork(unittest.TestCase):
         l1a_r = F.l1_loss(inputs,targets,reduction='sum')
         pois_r = F.poisson_nll_loss(inputs,targets,log_input=False, full=True)
         rmse_r = rmse_loss(inputs, targets)
-        print("\nResults mse:{:.5f} mse_s:{:.5f} mc:{:.5f} cce:{:.5f} l1:{:.5f} l1a_r:{:.5f} poi:{:.5f} rmse:{:.5f}"
-            .format(mse_r,mse_r2,mc_r,cce_r,l1_r,l1a_r,pois_r, rmse_r))
+        #print("\nResults mse:{:.5f} mse_s:{:.5f} mc:{:.5f} cce:{:.5f} l1:{:.5f} l1a_r:{:.5f} poi:{:.5f} rmse:{:.5f}"
+        #    .format(mse_r,mse_r2,mc_r,cce_r,l1_r,l1a_r,pois_r, rmse_r))
 
         targets_w = torch.tensor([[.5,.0,.1,.0,.1],[.0,.0,.3,.6,.1],[.5,.2,.1,.1,.1]]).float()
 
@@ -217,8 +222,8 @@ class TestNetwork(unittest.TestCase):
         l1a_r = F.l1_loss(inputs,targets_w,reduction='sum')
         pois_r = F.poisson_nll_loss(inputs,targets_w,log_input=False, full=True)
         rmse_r = rmse_loss(inputs,targets_w)
-        print("\nResults mse:{:.5f} mse_s:{:.5f} mc:{:.5f} cce:{:.5f} l1:{:.5f} l1a_r:{:.5f} poi:{:.5f} rmse:{:.5f}"
-            .format(mse_r,mse_r2,mc_r,cce_r,l1_r,l1a_r,pois_r, rmse_r))
+        #print("\nResults mse:{:.5f} mse_s:{:.5f} mc:{:.5f} cce:{:.5f} l1:{:.5f} l1a_r:{:.5f} poi:{:.5f} rmse:{:.5f}"
+        #    .format(mse_r,mse_r2,mc_r,cce_r,l1_r,l1a_r,pois_r, rmse_r))
 
 
 

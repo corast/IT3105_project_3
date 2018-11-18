@@ -17,6 +17,9 @@ import os
 class Datamanager():
     def __init__(self, filepath, dim=5):
         self.filepath = filepath
+        if(not os.path.isfile(filepath)):
+            with open (filepath,"a") as file:
+                pass
         #if(not os.path.isfile(filepath)): # if filepath is not a file
 
         #    raise ValueError("filepath is not a path")
@@ -72,8 +75,8 @@ class Datamanager():
         len_dataset = len(new_data)
         len_row = len(data[0]) # assume there is something from before.
 
-        if(len_dataset > limit): # If we have more data than we want, remove top rows.
-            amount = len_dataset - limit
+        if(len_dataset > limit + 1): # If we have more data than we want, remove top rows.
+            amount = len_dataset - limit + 1
             new_data = new_data[amount:] # We want to only keep from amount and out.
 
         if(len(header) != 0):
