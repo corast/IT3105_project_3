@@ -100,3 +100,18 @@ def find_models(name):
         return path
     else:
         print("{} is not a regular file".format(path))
+
+def get_player_states(board,dim,ravel=True): # Takes in an 5x5 array and outputs two 5x5 arrays with 1 where player played.
+    if( type(board) == list): # Need to translate to np.array
+        board = np.array(board) # Hopefulle, dimentions are the same.
+    board = np.reshape(board,(dim,dim))
+    
+    player1_board = np.in1d(board,1).reshape(board.shape).astype(int)
+    #print(player1_board)
+    player2_board = np.in1d(board,2).reshape(board.shape).astype(int)
+    if(ravel):
+        return player1_board.ravel(), player2_board.ravel()
+    return player1_board, player2_board
+
+#   print(get_player_states([0,1,1,2,2,0,1,1,2,2,0,1,1,2,2,0,1,1,2,2,0,1,1,2,2], dim=5,ravel=False))
+    

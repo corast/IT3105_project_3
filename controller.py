@@ -46,15 +46,28 @@ def check_integer(max):
 def play_hex(dim): # TODO: init start player etc.
     return HEX(dim)
 
-def ANET(name): # TODO FIX
-    input_dim = (args.dimentions*args.dimentions*2)+2
-    target_dim = args.dimentions*args.dimentions
-    return network.Model(insize=input_dim,outsize=target_dim,name=name)
+def ANET_TEST(name, dim): # TODO FIX
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim
+    return network.Model(nn.Linear(input_dim, 100),nn.ReLU(),
+        nn.Linear(100,target_dim), nn.Softmax(dim=-1), name=name)
 
-def CUSTON_NET(name):
-    input_dim = (args.dimentions*args.dimentions*2)+2
-    target_dim = args.dimentions*args.dimentions
-    model = network.Model(
+def ANET_TEST_2(name, dim): # TODO FIX
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim
+    return network.Model(nn.Linear(input_dim, 80),nn.ReLU(),
+        nn.Linear(80, 40),nn.ReLU(),
+        nn.Linear(40,target_dim), nn.Softmax(dim=-1), name=name)
+
+def HEX_CNN(name, dim):
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim 
+    return network.Model(network.Reshape(3,4,5))
+
+def CUSTON_NET(name, dim):
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim
+    model = network.Model(network.Reshape(3,4,5),
         nn.Linear(input_dim, 40),nn.ReLU(),
         nn.Linear(40,target_dim), nn.Softmax(dim=-1))
     return model
@@ -142,13 +155,13 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/hex_19.csv",dim=args.dimentions)
+    datamanager = Datamanager("Data/anet_test_2.csv",dim=args.dimentions)
     
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = HEX_NET_2("TEST-HEXNET") # Use default values
+            rollout_policy = ANET_TEST_2("ANET-TEST-2",args.dimentions) # Use default values
             rollout_policy.apply(network.weights_init) # init weights and biases.
             #TODO: handle continue training from file.
             mcts = MCTS(node=root, dataset=datamanager,

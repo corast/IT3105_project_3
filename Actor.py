@@ -103,14 +103,3 @@ def play_game(game:Game,first:Actor, second:Actor):
         #game_finished = game.get_winner()
         count += 1
     return game.get_winner()
-"""
-model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
-#model1 = network.Model(nn.Linear(52,30), nn.ReLU(), nn.Linear(30,30), nn.ReLU(), nn.Linear(30,25), nn.Softmax(dim=-1)
-#,name="rms",filepath="models/TESTNET_90")
-#model2 = network.Model(nn.Linear(52,30), nn.ReLU(), nn.Linear(30,30), nn.ReLU(), nn.Linear(30,25), nn.Softmax(dim=-1)
-#            ,name="adam")
-game = HEX.HEX(dim=5)
-
-tournament(game,games=100, 
-models=[model1], random=True)
-"""

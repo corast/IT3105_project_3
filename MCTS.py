@@ -158,10 +158,6 @@ class MCTS():
         # We also don't want to start training until buffer is filled with random data.
         if(start_player < 1 or start_player > 3):
             raise ValueError('Value of {} as P is not supported'.format(start_player))
-        
-        if(epoch == 0): # Save network if we are starting from scratc.
-            #Start by saving the network as agent 0.
-            self.rollout_policy.store(epoch=0, optimizer=optimizer, loss=1000)#Max loss to begin with.
 
         # fill buffer using random rollout, since this is better than untrained network.
         size = self.dataset.get_buffer_size()
@@ -169,6 +165,7 @@ class MCTS():
         # If size == 0, we should do some random rollouts to gather some data, before training.
         # Play 10 games, with random rollout, 800 sims per move -> 600*moves rollout, should be an OK aproximation to begin with.
         if(size == 0 and init_data_games != 0 and data_sims != 0): # means we want to gather som random data firstly.
+            print("Gathering random data")
             self.random_rollout = True
             self.play_batch(num_sims = data_sims, games=init_data_games, start_player=3, verbose=False) # Automaticly use the policy if availible for a move.
             self.random_rollout = False
@@ -180,14 +177,17 @@ class MCTS():
             init_optimizer = torch.optim.RMSprop(self.rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             #init_optimizer = copy.copy(optimizer) # Don't want to change params on self training optimizer.
             init_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(init_optimizer, 'min')
-            for itt in range(200): # 10 itterations, batch 50
+            for itt in range(1,200+1): # 10 itterations, batch 50
                 loss_train,loss_test = network.train(self.rollout_policy,batch=50, iterations=10,
                 casemanager_train=self.dataset,casemanager_test=dataset_test, optimizer = init_optimizer,loss_function=loss_function,verbose=100)
-                init_scheduler.step(loss_test)
-
+                init_scheduler.step(loss_test)  
                 print("pre_itteration {}  loss_train: {:.9f} loss_train: {:.9f} lr: {} ".format(itt, loss_train,loss_test, optimizer.param_groups[0]["lr"]))
             # Store network again.
             #self.rollout_policy.store(epoch=-1, optimizer=init_optimizer, loss=loss_train)
+
+        if(epoch == 0): # Save network if we are starting from scratch.
+            #Start by saving the network as agent 0.
+            self.rollout_policy.store(epoch=1, optimizer=optimizer, loss=1000)#Max loss to begin with.
 
         if(variables.verbose > variables.play):
             print("Start training with self play using policy network")
@@ -213,7 +213,6 @@ class MCTS():
                 scheduler.step(loss)
                 #print(optimizer.param_groups[0]["lr"])
                 # collect the last x losses from history.
-
 
                 training_count += 1 # update training count
                 # Check if we want to store this trained policy network. 

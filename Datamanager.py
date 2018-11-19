@@ -15,7 +15,7 @@ import torch
 import os
 #import pandas
 class Datamanager():
-    def __init__(self, filepath, dim=5):
+    def __init__(self, filepath, dim=5, CNN = False):
         self.filepath = filepath
         if(not os.path.isfile(filepath)):
             with open (filepath,"a") as file:
@@ -23,9 +23,12 @@ class Datamanager():
         #if(not os.path.isfile(filepath)): # if filepath is not a file
 
         #    raise ValueError("filepath is not a path")
-
-        self.inputs = 2+dim*dim*2
-        self.outputs = dim*dim
+        if(CNN):
+            self.inputs = 2+dim*dim*2
+            self.outputs = dim*dim
+        else:
+            self.inputs = 2+dim*dim*dim # 5*5*5*2 [player 1 states][player 2 states][player turn]
+            self.outputs = dim*dim
     
     # TODO: specify an random amount as cases
     # TODO: use dictionaries instead?
@@ -60,7 +63,7 @@ class Datamanager():
             for row in data:
                 dataset_writer.writerow(row)
 
-    def update_csv_limit(self,header=[],data=[[]],limit=500): 
+    def update_csv_limit(self, header=[], data=[[]], limit=500): 
         # Update the csv file, but only keep the top 1000 newest examples.
         # We need to remove from the bottom.
         #TODO: put buffer in memory instead, and write to csv after a game is finished, instead of every move.
@@ -104,8 +107,10 @@ class Datamanager():
         """ Return two tensors(inputs, targets) of size batch_size from bufferfile"""
         data = self.read_csv()
         tot_size = len(data) # Number of cases we got.
+        
         # Num, is the amount of data we send back.
         num = self.return_num(batch_size, tot_size)
+        print(self.filepath, tot_size, num)
         if(tot_size == 0):
             raise ValueError("No cases availible in file {}",self.filepath)
         #print("return_batch",self.filepath)

@@ -250,6 +250,10 @@ class HEX_State(State):
     def get_state_as_input(self):
         return self.state_array
 
+    def get_state_as_cnn_input(self): # turn board into: 5x5:[player 1][player 2] + [player id] 
+        pass
+
+
     def is_game_over(self): 
         if(self.winner is not None):
             return True
@@ -417,7 +421,6 @@ class HEX(Game):
 
     def get_legal_actions_bool(self):
         return self.state.get_legal_actions_1d()
-
 
     def get_winner(self):
         return self.state.winner

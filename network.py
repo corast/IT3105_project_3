@@ -50,6 +50,14 @@ def NETWORK_TEST():
     #nn.Linear(input_dim, 40),nn.ReLU(),nn.Linear(40,target_dim), nn.Softmax(dim=-1)) 
     print(model)
 
+class Reshape(nn.Module): # Resape class
+    def __init__(self, *args):
+        super(Reshape, self).__init__()
+        self.shape = args
+
+    def forward(self, x):
+        return x.view(self.shape)
+
 class Model(nn.Sequential):
     def __init__(self, *args,name="Network", filepath=None):
         #print("args",args)
@@ -233,92 +241,4 @@ def train_architecture_testing():
         #print(optimizer["lr"])
     model.store(epoch=10000, optimizer = optimizer, loss = loss_train)
 
-
 #train_architecture_testing()
-
-class Model_OLD(nn.Module):
-    #TODO: accept filepath, to lad model directy?
-    def __init__(self,insize = 52,outsize = 25, name="network", filepath=None): # Define the network in detail
-        super().__init__() 
-        #self.outsize = outsize
-        #self.insize = insize
-        self.name = name # want each module to have an unique name when we save to file.
-
-        self.inL = nn.Linear(insize,30)
-        #self.drop1 = nn.Dropout(p=0.2)
-        self.hL1 = nn.Linear(30,30)
-        #self.drop2 = nn.Dropout(p=0.2)
-        self.hL2 = nn.Linear(30,outsize)
-        #self.outL = nn.Softmax(outsize) # output is only a board state.
-        if(filepath is not None):
-            self.load_model(filepath)
-
-    def forward(self, input):
-        # set_trace() # debugging
-        x = self.inL(input) # put input in input layer
-        x = F.relu(x)
-        x = self.hL1(x)
-        x = F.relu(x)
-        x = self.hL2(x)
-        x = F.softmax(x, dim=-1)
-        return x # Return output, whatever it is.
-    
-    """
-        TESTNET: nn.Linear(insize,30), F.relu(), nn.Linear(30,30), F.relu(), nn.Linear(30,outsize), F.softmax(dim=-1)
-    """
-
-    def evaluate(self, input):
-        """ Use the network, as policy """
-        self.eval() # Turn off training, etc.
-        return self.forward(input)
-
-    def store(self,epoch,optimizer,loss, datapath=""): # Need model, and optimizer
-        #Store ourself in a file for later use
-        save_path = "models/"+ self.name + "_" + str(epoch) # save a new network with an unique ID, name + epoch
-        torch.save({'epoch':epoch,
-                    'model_state_dict':self.state_dict(),
-                    'optimizer_state_dict':optimizer.state_dict(),
-                    'loss':loss,
-                    'datapath':datapath,
-                    },save_path)
-
-    def load_model(self, path, optimizer=None):
-        if os.path.isfile(path):
-            #model = model # TheModelClass(*args, **kwargs)
-            optimizer = optimizer # TheOptimizerClass(*args, **kwargs)
-            checkpoint = torch.load(path)
-            self.load_state_dict(checkpoint['model_state_dict'])
-            
-            epoch = checkpoint['epoch']
-            loss = checkpoint['loss']
-            if(optimizer is None):  # Only if we want to keep training.
-                return loss, epoch
-            else:
-                optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            return loss, epoch # Return all this info
-        else:
-            print(" => no checkpoint found at '{}'".format(path))
-
-    
-    # params; input:dim*dim+2 [board_state + PID] in binary reversed.
-    def get_action(self, input, legal_moves): #should return an specific action.
-        if(not (type(input) == torch.Tensor)):
-            print(type(input),"is not a tensor")
-        prediction =  self.evaluate(input) # * Return dim*dim vector.
-        #Return argmax as touple.
-        output = torch.Tensor.numpy(prediction.detach()) # convert to numpy array.
-        #legal_moves = rollout_state.get_legal_actions_bool() # 1 is legal, 0 is illegal.
-        dim = np.sqrt(len(legal_moves)).astype(int)
-
-        dims = (dim,dim)
-        actions = np.multiply(output, legal_moves) # Need to select the highest value from this one.
-
-        zeros = np.count_nonzero(actions)
-        if(zeros == 0):
-            print("We don't know what to do ...")
-            normalize_legal_moves = misc.normalize_array(legal_moves) # Weights for moves.
-            dims = (np.sqrt(len(legal_moves)),np.sqrt(len(legal_moves)))
-            return np.unravel_index(np.random.choice(range(len(legal_moves)), p=normalize_legal_moves), dims=dims)
-
-        action = np.unravel_index(np.argmax(actions),dims)
-        return action # Return greedy action.
