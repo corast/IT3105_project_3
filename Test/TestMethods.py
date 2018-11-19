@@ -46,7 +46,7 @@ class TestMics(unittest.TestCase):
 class TestHEX(unittest.TestCase):
     def test_board_to_nn_input(self):
         hex = HEX.HEX(2) # Init game with 4 pieces
-        self.assertListEqual(hex.state.get_state_as_input(),[0,0,0,0,0,0,0,0])
+        self.assertListEqual(list(hex.state.get_state_as_input()),[0,0,0,0])
         # Play some turns.
         hex.play((0,0)) # ! Player 1 (1,0)
         self.assertListEqual(hex.state.get_state_as_input(),[1,0,0,0,0,0,0,0])
@@ -132,43 +132,27 @@ class TestHEX(unittest.TestCase):
 
 class TestDatamanager(unittest.TestCase):
     def test_read_csv(self):
-        datamanager = Datamanager.Datamanager("Data/test_dataset_update.csv")
+        datamanager = Datamanager.Datamanager("Test/test_dataset_update.csv")
         data = datamanager.read_csv()
         self.assertEqual(len(data),11)
+
+    def test_buffer_csv(self):
+        datamanager = Datamanager.Datamanager("Test/test_buffer.csv") 
+        #print("######################################Datamanaager", datamanager.buffer)
+        #self.assertEqual(len(datamanager.buffer),4)
+
+        datamanager.update_csv_limit()
     
-    def test_write_csv(self):
-        datamanager = Datamanager.Datamanager("Data/test_dataset_update.csv")
-        data = datamanager.read_csv("Data/test_dataset_update.csv")
+        self.assertEqual(datamanager.get_buffer_size(),8)
 
-        data_values = [
-            ["0,1,2,3,4,5,6,7,8,9,10","1,0","5,10,2,5,6,1,2,6"],
-            ["1,2,3,4,5,6,7,8,9,0,1","0,1","7,9,1,57,8,2,1,2"],
-            ["2,3,4,5,6,7,8,9,1,0","1,0","5,8,9,0,6,2,3,6,8,1"]]
-
-        datamanager.update_csv_limit(data=data_values,header=["board","PID","board_target"],limit=10)
-        data_updated = datamanager.read_csv("Data/test_dataset_update.csv")
-        self.assertEqual(len(data_updated), len(data))
-
-        datamanager_2 = Datamanager.Datamanager("Data/test_dataset_update_2.csv")
-        data_2 = datamanager_2.read_csv()
-        data_values = [
-            ["x","x","x"],
-            ["y","y","y"],
-            ["z","z","z"]]
-        
-        datamanager_2.update_csv_limit(data=data_values,limit=10)
-        data_updated_2 = datamanager_2.read_csv()
-        self.assertEqual(len(data_updated_2), len(data_2))
-    
-    def test_return_batch(self):
-        datamanager = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
-
-        x,y = datamanager.return_batch(1)
-        self.assertEqual(x.shape[0],1)
-        self.assertEqual(y.shape[0],1)
+    def test_get_batch(self):
+        datamanager = Datamanager.Datamanager("Test/dataset_test_batch.csv",dim=5,limit=500,modus=2)
+        input,target = datamanager.return_batch(10)
+        self.assertEqual(len(input),3)
+        self.assertEqual(len(target),3)
 
     def test_get_length_dataset(self):
-        datamanager = Datamanager.Datamanager("Data/test_dataset_update.csv")
+        datamanager = Datamanager.Datamanager("Test/test_dataset_update.csv")
         length = datamanager.get_buffer_size()
         self.assertEqual(length,11)
 
@@ -228,4 +212,4 @@ class TestNetwork(unittest.TestCase):
 
 
 if __name__=="__main__":
-    unittest.main()
+    unittest.main(failfast=True)

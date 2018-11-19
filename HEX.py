@@ -29,7 +29,7 @@ from misc import *
     # TODO: Merge self.connected with self.edge_v # Don't need two different ones.
 class HEX_Cell():
     NONE = [False, False, False, False] # We are not an edge node.
-    BLACK_L = [True,False,False,False] #
+    BLACK_L = [True,False,False,False] # 
     BLACK_R = [False,False,False,True] # 
     RED_T = [False,True,False,False] # 
     RED_B = [False,False,True,False] # 
@@ -135,7 +135,9 @@ class HEX_State(State):
         else:
             self.board = self.createBoard(dim) # dim
             self.legal_cells = np.ones((dim,dim)).astype(int) # Simple array, to keep track of legal moves we can make from a given board. 
-            self.state_array = np.zeros((self.dimx*self.dimy*2)).astype(int).tolist()
+            #self.state_array = [0]*self.dimx*self.dimy
+            self.state_array = np.zeros((self.dimx,self.dimy)).astype(int)
+            #self.state_array = np.zeros((self.dimx*self.dimy*2)).astype(int).tolist()
             self.init_neighbours() # connect neighbouring cells. To easily search for complete path later.
 
     def createBoard(self, dim):
@@ -191,20 +193,22 @@ class HEX_State(State):
             print("")
 
     def change_state(self, move): 
-        """ Change state of board with an action to state."""# change the index, based on which made the move, assumes this is a legal action.
+        """ Change state of board with an action to state."""# change the index, based on which player made the move
         #action is a touple or list (x,y)
         x = move[0]; y = move[1]
         if((self.board[x][y]).is_clear()): # check if cell is clear
             self.legal_cells[x][y] = 0 # We need to update legal states aswell.
-
+            self.state_array[x][y] = self.player_turn # Set current state of cell equal to ourself.
             if(self.board[x][y].update_state(self.player_turn)): # Tell cell to update it's value.
                 self.winner = self.player_turn # Set that someone won.
                 #print("!!!!!!!!!!! PLAYER {} WON !!!!!!!!!!!!!!".format(self.player_turn))
             # * update state_array
-            one_hot = int_to_binary_rev(self.board[x][y].state, 2) # Return the state as a binary array.
-            for v,value in enumerate(one_hot):
-                index = x*self.dimx*2+y*2+v # [0,1,2] -> [0,0,1,1,2,2]
-                self.state_array[index] = value
+            # State array is a simple array dimxdim array that keep track of game cons.
+            
+            #one_hot = int_to_binary_rev(self.board[x][y].state, 2) # Return the state as a binary array.
+            #for v,value in enumerate(one_hot):
+            #    index = x*self.dimx*2+y*2+v # [0,1,2] -> [0,0,1,1,2,2]
+            #    self.state_array[index] = value
 
             self.switch_turn() # We are no longer in play.
         else:
@@ -248,7 +252,7 @@ class HEX_State(State):
         return state_array
     
     def get_state_as_input(self):
-        return self.state_array
+        return self.state_array.ravel().tolist() # flatten list before we send.
 
     def get_state_as_cnn_input(self): # turn board into: 5x5:[player 1][player 2] + [player id] 
         pass

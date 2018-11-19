@@ -114,4 +114,10 @@ def get_player_states(board,dim,ravel=True): # Takes in an 5x5 array and outputs
     return player1_board, player2_board
 
 #   print(get_player_states([0,1,1,2,2,0,1,1,2,2,0,1,1,2,2,0,1,1,2,2,0,1,1,2,2], dim=5,ravel=False))
-    
+
+def one_hot_array(board): # turn [1,2,1] -> [1,0,0,1,1,0]
+    board_array = []
+    for cell in board:
+        one_hot = int_to_binary_rev(cell,2)
+        board_array.extend(one_hot)
+    return board_array # return as regular list.

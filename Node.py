@@ -88,13 +88,13 @@ class Node():
                 action = child.action # Should be a touple for HEX.
                 visits = child.num_visits # What we want to store.
                 data_visits[action[0]*dimention[0]+action[1]] = visits
-
-            PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
+            player = self.game.get_current_player()
+            #PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
             data_input = self.game.get_state_as_input()
             #data_input.extend(0,PID)
-            data_target = misc.normalize_array(data_visits)
-            # We need to return this data aswell.
-            return self.children[np.argmax(choices)], PID + data_input + data_target # * Return data per move.
+            data_target = misc.normalize_array(data_visits)  
+            #  One row of data : [player_id, row1, row2, row3,...]
+            return self.children[np.argmax(choices)], player + data_input + data_target # * Return data per move.
 
         # * Select child with best score
         return self.children[np.argmax(choices)] # Select index of best child.
@@ -117,6 +117,7 @@ class Node():
 
     
     def rollout_policy_network(self, rollout_state,  anet:network.Module, greedy): # TODO: high probability for random to begin with.
+        #TODO: Fix inputs...
         # We neede to get our state + PID as input.
         PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
         data_input = self.game.get_state_as_input()

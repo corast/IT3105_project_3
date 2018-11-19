@@ -13,25 +13,32 @@ import numpy as np
 import random
 import torch
 import os
+import misc
 #import pandas
+
 class Datamanager():
-    def __init__(self, filepath, dim=5, CNN = False):
+    def __init__(self, filepath, dim=5, modus=1, limit=500):
         self.filepath = filepath
-        if(not os.path.isfile(filepath)):
+        self.limit = limit
+        self.dim = dim # dim of game we use
+        if(modus not in [1,2,3]):
+            raise ValueError("Incorrect modus selected ", modus, "must be 1,2 or 3")
+        self.modus = modus # 3 moduses, "normal", "cnn", "flat_cnn"
+        if(not os.path.isfile(filepath)):  # * Create filepath, if it doest exist already.
             with open (filepath,"a") as file:
                 pass
-        #if(not os.path.isfile(filepath)): # if filepath is not a file
+        self.buffer = [] # An list, that contains target + training.
 
-        #    raise ValueError("filepath is not a path")
-        if(CNN):
-            self.inputs = 2+dim*dim*2
-            self.outputs = dim*dim
-        else:
-            self.inputs = 2+dim*dim*dim # 5*5*5*2 [player 1 states][player 2 states][player turn]
-            self.outputs = dim*dim
-    
-    # TODO: specify an random amount as cases
-    # TODO: use dictionaries instead?
+        # * check if there is something from previous buffer.
+        prev_buff_size = self.get_buffer_size()
+        if(prev_buff_size != 0):
+            self.buffer = self.read_csv() # * fill our buffer
+
+        self.__switcher = {
+            1:self.normal,
+            2:self.cnn,
+            3:self.cnn_flatten
+            }
 
     def read_csv(self,header=False): # amount is to specify whether or not we want all the file or not.
         # read the content of the csv file.
@@ -49,8 +56,16 @@ class Datamanager():
                     #print(row)
                 line_count += 1
         return file
+    
+    def update_buffer(self,data=[]): # Simply add one extra row to buffer array.
+        
+        self.buffer.extend([data]) # hopefully, we can add an extra row with out problems.
+        if(len(self.buffer) > self.limit + 1):
+            amount = len(self.buffer) - self.limit + 1
+            self.buffer = self.buffer[amount:] # Only keep limit
 
-    def update_csv(self,mode="a",header=[],data=[[]]): # Data should be an array of arrays, with all the data we need
+
+    def __update_csv(self,mode="a",header=[],data=[[]]): # Data should be an array of arrays, with all the data we need
         # The array must be [[row1],[row2]] etc. not [row1]
         # []
         # Mode specify if we want to replace the file with data parameter, or append new data.
@@ -63,29 +78,15 @@ class Datamanager():
             for row in data:
                 dataset_writer.writerow(row)
 
-    def update_csv_limit(self, header=[], data=[[]], limit=500): 
-        # Update the csv file, but only keep the top 1000 newest examples.
+    def update_csv_limit(self, header=[]): 
+        # Update the csv file, but only keep the top newest examples.
         # We need to remove from the bottom.
         #TODO: put buffer in memory instead, and write to csv after a game is finished, instead of every move.
         if(len(header) != 0):
-            old_data = self.read_csv(header=True)
+            self.__update_csv(mode="w",header=header,data=self.buffer)
         else:
-            old_data = self.read_csv(header=False)
-
-        old_data.extend(data)
-        new_data = old_data
-
-        len_dataset = len(new_data)
-        len_row = len(data[0]) # assume there is something from before.
-
-        if(len_dataset > limit + 1): # If we have more data than we want, remove top rows.
-            amount = len_dataset - limit + 1
-            new_data = new_data[amount:] # We want to only keep from amount and out.
-
-        if(len(header) != 0):
-            self.update_csv(mode="w",header=header,data=new_data)
-        else:
-            self.update_csv(mode="w",data=new_data)
+            self.__update_csv(mode="w",data=self.buffer)
+        
     
     def return_num(self, num, tot_size):
         """ Return number of cases we want to keep. """
@@ -105,30 +106,33 @@ class Datamanager():
 
     def return_batch(self, batch_size): # Return tensor with batch_size from file.
         """ Return two tensors(inputs, targets) of size batch_size from bufferfile"""
-        data = self.read_csv()
+
+        #Handle converting data to correct network innput, CNN takes 3 channels.
+        # Non CNN takes current setting.
+        # Batch can actually be pulled from buffer, since it is the same.
+
+        data = self.buffer
         tot_size = len(data) # Number of cases we got.
-        
+
         # Num, is the amount of data we send back.
         num = self.return_num(batch_size, tot_size)
-        print(self.filepath, tot_size, num)
+
         if(tot_size == 0):
-            raise ValueError("No cases availible in file {}",self.filepath)
-        #print("return_batch",self.filepath)
+            raise ValueError("No cases availible in file {}".format(self.filepath))
         # Randomly select num unique cases
         data = random.sample(data, num) # We don't care about testing or validation at this stage
-
-        targets = []
+        data_pid = []
+        data_inputs = []
+        data_targets = []
         for i, row in enumerate(data):
-            data[i] = list(map(float, row))
-            inputs = data[i][:self.inputs]
-            target = data[i][self.inputs:]
-            # We need to seperate input and target into two seperate lists
-            data[i] = inputs
-            targets.append(target)
-        inputs = data
-        #print("targets",targets)
-        t_inputs = torch.from_numpy(np.array(inputs)).float()
-        t_targets = torch.from_numpy(np.array(targets)).float()
+            data_pid.append(int(row[0])) 
+            input = list(map(int,row[1:(self.dim*self.dim)+1])) # 1-> 25 should be board
+            target = list(map(float,row[(self.dim*self.dim)+1:]))
+            data_inputs.append(input)
+            data_targets.append(target)
+            
+        t_inputs = self.__switcher.get(self.modus)(data_pid, data_inputs) # Get inputs
+        t_targets = torch.from_numpy(np.array(data_targets)).float()
 
         return t_inputs, t_targets
 
@@ -136,6 +140,33 @@ class Datamanager():
         """ return number of rows in csv file"""
         data = self.read_csv()
         return len(data)
+    def normal(self,data_pid,data_inputs):
+        # inputs:  PID + board_state
+        PID =  np.array([misc.int_to_binary_rev(pid) for pid in data_pid])
+        inputs = np.array([misc.one_hot_array(board) for board in data_inputs])
+        inputs = np.append(PID, inputs, axis=1)
+        # * PID + board_state as one hot vectors per cell.
+        return torch.from_numpy(inputs).float() # * (Bx52) 
+
+    def cnn(self,data_pid,data_inputs): # Tensor with shape (B, dim,dim, dim,dim, dim,dim)
+        PID = np.array([np.full((self.dim,self.dim),(2-pid)) for pid in data_pid]) # Player 2 = 0, Player 1 = 1
+        inputs = np.array([misc.get_player_states(board,self.dim,ravel=False) for board in data_inputs])
+        PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1],PID.shape[2]))
+        inputs = np.concatenate((inputs,PID),axis=1)
+        return torch.from_numpy(inputs).float() # * (B x 3 x 5 x 5) for CNN2d
+
+    def cnn_flatten(self,data_pid,data_inputs):# Tensor with shape (B, dim*dim, dim*dim, dim*dim)
+        PID = np.array([np.full((self.dim*self.dim),(2-pid)) for pid in data_pid]) # Player 2 = 0, Player 1 = 1
+        #inputs = torch.from_numpy(np.array([misc.get_player_states(board,self.dim,ravel=True) for board in data_inputs]))
+        #boards = [misc.get_player_states(board,self.dim,ravel=True) for board in data_inputs] # return list of touples
+        # Add PID to the boards.
+        #print("boards",boards[0])
+        inputs = np.array([misc.get_player_states(board,self.dim,ravel=True) for board in data_inputs])
+        PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1]))
+        inputs = np.concatenate((inputs, PID),axis=1)
+
+        return torch.from_numpy(inputs).float() # * (B x 3 x 25)  For CNN1d
+
 
 
 def test_return_batch():

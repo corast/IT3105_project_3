@@ -89,7 +89,8 @@ class MCTS():
         if(self.gather_data): # * Whether not we need to add data to buffer or not.
             victor,data = node.get_best_child(root_player, data=True) # Get best state node from tree.
             #Store the data.
-            self.dataset.update_csv_limit(data = [data]) # Add data row to buffer. 
+            self.dataset.update_buffer(data = data) # Add row to buffer.
+            #self.dataset.update_csv_limit(data = [data]) # Add data row to buffer. 
         else: # We dont do 
             victor = node.get_best_child(root_player) # Get best state node from tree.
         return victor # Return best state node, which we want to keep.
@@ -116,6 +117,9 @@ class MCTS():
                 if(variables.verbose >= variables.play):
                     victor.game.display_turn(victor.action) # Display what happened to get to this state.
                     victor.game.display_board()
+        # Check if we need to update csv file.
+        if(self.dataset is not None):
+            self.dataset.update_csv_limit(limit=1000) # 
         return node # return termal node, which is the final state of our game.
 
     #TODO: had self.root.is_termal_node(), and self.root = Node(game=new_state.game,parent=self.root, action=new_state.action, node_depth=new_state.node_depth)
