@@ -89,7 +89,7 @@ def find_models(name):
     import glob
     import os
     # Find every file in directory of models with same name
-    result = glob.glob("models/"+name+"*")
+    result = glob.glob("models/"+name+"/"+name+"*")
     if(len(result) == 0):
         return None
     result_2 =[x.split("_") for x in result]

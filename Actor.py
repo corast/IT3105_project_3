@@ -6,9 +6,11 @@ import network
 import numpy as np
 import misc
 import torch
+import torch.nn as nn
 import HEX
 from itertools import permutations 
 import copy
+import variables
 
 #TODO Names
 class Actor():
@@ -53,12 +55,12 @@ class Actor():
 
 #ANET = Actor(model = network.Module(insize = 52, outsize = 25, name="network"),filepath = "models/testing_network_2000")
 from base.Game import Game
-def tournament(game:Game, model=[], filepaths=[], random=False, games=10): # We need to load a model from path.
+def tournament(game:Game, models=[], random=False, games=10): # We need to load a model from path.
     actors = []
-    for anet,path in zip(model,filepaths):
-        actors.append(Actor(model=anet, filepath=path))
+    for anet in models:
+        actors.append(Actor(model=anet))
     if(random == True):
-        actors.append(Actor())
+        actors.append(Actor()) # Random actor
     #Play tournament.
     # round robin tournament.
     # Every play against every one else.
@@ -87,22 +89,28 @@ def play_game(game:Game,first:Actor, second:Actor):
     while game_finished is None: # play until game is over.
         board_state = game.get_state_as_input() # Get board state.
         PID = misc.int_to_binary_rev(game.get_current_player())
-
         legal_moves = game.get_legal_actions_bool()
         action = None
+
         if(game.get_current_player == 1):
             action = first.get_action(PID + board_state, legal_moves)
         else:
             action = second.get_action(PID + board_state,legal_moves)
         game_finished = game.play(action)
+        if(variables.verbose >= variables.play):
+            game.display_turn(action) # Display what happened to get to this state.
+            game.display_board()
         #game_finished = game.get_winner()
         count += 1
     return game.get_winner()
-
 """
-first = Actor()
-second = Actor()
+model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
+#model1 = network.Model(nn.Linear(52,30), nn.ReLU(), nn.Linear(30,30), nn.ReLU(), nn.Linear(30,25), nn.Softmax(dim=-1)
+#,name="rms",filepath="models/TESTNET_90")
+#model2 = network.Model(nn.Linear(52,30), nn.ReLU(), nn.Linear(30,30), nn.ReLU(), nn.Linear(30,25), nn.Softmax(dim=-1)
+#            ,name="adam")
 game = HEX.HEX(dim=5)
-#print(play_game(game,first,second))
-tournament(game,games=20, model=[network.Model(name="rms"),network.Model(name="adam")],filepaths=["models/TESTNET_90","models/TESTNET_0"], random=True)
+
+tournament(game,games=100, 
+models=[model1], random=True)
 """

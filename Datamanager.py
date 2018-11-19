@@ -60,10 +60,10 @@ class Datamanager():
             for row in data:
                 dataset_writer.writerow(row)
 
-    def update_csv_limit(self,header=[],data=[[]],limit=1000): 
+    def update_csv_limit(self,header=[],data=[[]],limit=500): 
         # Update the csv file, but only keep the top 1000 newest examples.
         # We need to remove from the bottom.
-        #TODO: normalize the target function
+        #TODO: put buffer in memory instead, and write to csv after a game is finished, instead of every move.
         if(len(header) != 0):
             old_data = self.read_csv(header=True)
         else:
@@ -83,9 +83,6 @@ class Datamanager():
             self.update_csv(mode="w",header=header,data=new_data)
         else:
             self.update_csv(mode="w",data=new_data)
-
-    def update_buffer(self):
-        pass
     
     def return_num(self, num, tot_size):
         """ Return number of cases we want to keep. """
@@ -110,8 +107,8 @@ class Datamanager():
         # Num, is the amount of data we send back.
         num = self.return_num(batch_size, tot_size)
         if(tot_size == 0):
-            raise ValueError("No cases availible in file")
-        
+            raise ValueError("No cases availible in file {}",self.filepath)
+        #print("return_batch",self.filepath)
         # Randomly select num unique cases
         data = random.sample(data, num) # We don't care about testing or validation at this stage
 
@@ -131,7 +128,7 @@ class Datamanager():
         return t_inputs, t_targets
 
     def get_buffer_size(self):
-        r""" return number of rows in csv file"""
+        """ return number of rows in csv file"""
         data = self.read_csv()
         return len(data)
 

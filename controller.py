@@ -3,6 +3,7 @@
 from HEX import *
 import argparse
 import variables
+import Actor
 #from variables import *
 from Node import *
 from MCTS import *
@@ -58,12 +59,21 @@ def CUSTON_NET(name):
         nn.Linear(40,target_dim), nn.Softmax(dim=-1))
     return model
 
-def HEX_NET(name):
-    input_dim = (args.dimentions*args.dimentions*2)+2
-    target_dim = args.dimentions*args.dimentions
+def HEX_NET(name, dim):
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim
     model = network.Model(
         nn.Linear(input_dim, 70), nn.ReLU(),
         nn.Linear(70,50), nn.ReLU(), 
+        nn.Linear(50,target_dim), nn.Softmax(dim=-1), name=name)
+    return model
+
+def HEX_NET_2(name):
+    input_dim = (args.dimentions*args.dimentions*2)+2
+    target_dim = args.dimentions*args.dimentions
+    model = network.Model(
+        nn.Linear(input_dim, 50), nn.ReLU(),
+        #nn.Linear(100,50), nn.ReLU(), 
         nn.Linear(50,target_dim), nn.Softmax(dim=-1), name=name)
     return model
 
@@ -78,10 +88,9 @@ if __name__=="__main__":
     parser.add_argument("-v","--verbose", default=1,
                             required=False,type=check_positive_max,
                             help="1 = result, 2 = play(only at 2), 3 = debug(sim tree), 4 = debug_all") # integer
-    parser.add_argument("-s","--num_sims", default=100,
-                        required=True, type=check_positive)
-    parser.add_argument("-p","--start_player", default=1,choices=[1,2,3],
-                        type=check_positive, required=True)
+    parser.add_argument("-s","--num_sims", default=600, type=check_positive)
+    parser.add_argument("-p","--start_player", default=3,choices=[1,2,3],
+                        type=check_positive)
     parser.add_argument("-g","--games",help="number of games we play", default=1,
                     type=check_positive)
     """parser.add_argument("-a","--action", choices=["train","play","play_tourn","test","data"],
@@ -97,20 +106,27 @@ if __name__=="__main__":
     subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help"
                     ,required=True)
     parser_a = subparsers.add_parser("TRAIN")
-    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=5,
+    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=10,
                     type=check_positive)
-    parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=100,
+    parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=50,
                     type=check_positive)
     parser_a.add_argument("-sf","--storage_frequency",help="how often we store a mode, w.r.t. training", default=10,
                     type=check_positive)
     parser_a.add_argument("-tf","--training_frequency",help="how often we train, w.r.t games", default=1,
                     type=check_positive)
     
-
     parser_a.add_argument("-ig","--init_games",help="number of games we init random data", default=10,
                     type=check_positive)
     parser_a.add_argument("-is","--init_sims",help="number of simulations we init random data", default=5000,
                     type=check_positive)
+    parser_a.add_argument("-it","--init_train", help="Init training on data",type=bool, default=False)
+
+
+    parser_b = subparsers.add_parser("TOPP") # TOPP tournament
+
+    parser_b.add_argument("-g","--topp_games",type=check_positive, default=10)
+    parser_b.add_argument("-a","--agents",type=str, nargs='*' , required =True)
+    parser_b.add_argument("-r","--random",type=bool)
 
     args = parser.parse_args()
 
@@ -126,47 +142,60 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/data_hex_18nov.csv",dim=args.dimentions)
+    datamanager = Datamanager("Data/hex_19.csv",dim=args.dimentions)
     
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = HEX_NET("HEXNET") # Use default values
+            rollout_policy = HEX_NET_2("TEST-HEXNET") # Use default values
             rollout_policy.apply(network.weights_init) # init weights and biases.
             #TODO: handle continue training from file.
-            mcts = MCTS(node=root, datamanager=datamanager,
+            mcts = MCTS(node=root, dataset=datamanager,
                 time_limit=args.time_limit, rollout_policy=rollout_policy)
         else:
-            mcts = MCTS(node=root, datamanager=datamanager, 
+            mcts = MCTS(node=root, dataset=datamanager, 
                 time_limit=args.time_limit) 
         #mcts.simulate_best_action(root,10)
         if(args.sub_action == "TRAIN"): # We want to train against ourself.
             action = variables.action.get("train")
-            mcts.gather_data = True
-            iterations = args.iterations
-            batch = args.batch_size
-            init_games = args.init_games
-            init_sims = args.init_sims
-            storage_frequency = args.storage_frequency
-            training_frequency = args.training_frequency
+            mcts.gather_data = True # need to specificly set this.
+            iterations = args.iterations # default 5
+            batch = args.batch_size # default 50
+            storage_frequency = args.storage_frequency # default 10
+            training_frequency = args.training_frequency # default 1
+
+            init_games = args.init_games # default 10
+            init_sims = args.init_sims # default 5000
+            init_train = args.init_train
             epoch = 0 # rollout_policy
             optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             #loss_function = nn.MultiLabelMarginLoss()
             loss_function = pyloss.MSELoss(reduction='sum') # a bit better
-
+            #loss_function = pyloss.MSELoss()
             # Load previous model from file if exists.
-            if(rollout_policy is not None):
+            if(rollout_policy is not None): # * Load from prev saved model if exists.
                 name = rollout_policy.name
                 path = misc.find_models(name)
-                if(path is not None):
+                if(path is not None): # TODO: make sure optimizer is the same, otherwise error here.
                     # Load model from path.
-                    loss, epoch = rollout_policy.load_model(path)
+                    loss, epoch = rollout_policy.load_model(path,optimizer=optimizer) # Load optimizer settings too.
+
                     print("Loading self from path \"{}\" at epoch {}".format(path, epoch))
-        
+            
             mcts.play_batch_with_training(optimizer=optimizer,epoch=epoch,
             loss_function=loss_function,games=games,training_frequency=training_frequency, storage_frequency=storage_frequency, num_sims=args.num_sims,
-            iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games)
+            iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games,init_train=init_train)
+        elif(args.sub_action == "TOPP"):
+            # Load models from file and start tournament between them.
+            topp_games = args.topp_games
+            agents = args.agents
+            print("TOPP", agents, topp_games)
+            # TODO: pass subfolder in top
+            model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
+            Actor.tournament(game,games=100, 
+            models=[model1], random=True)
+            pass
         else: # Assume we just want to play
             mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
             

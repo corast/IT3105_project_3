@@ -76,8 +76,8 @@ class Node():
         #return self.children[np.argmin(choices)] # else we want to minimize winning (i.e. we are not rewarded from winning)    
 
     def get_best_child(self, c=0, data=False): # What we use to 
-        #TODO: handle not every child being visited.
-        
+        # TODO: Handle fewer simmulations that children.
+
         choices = [self.get_score(child, c) for child in self.children] # Get score from each child node.
         if(data): # * If we want to return important information about the child states values, for creating a training case.
             # We should return an array with 25x25 values.
@@ -94,7 +94,7 @@ class Node():
             #data_input.extend(0,PID)
             data_target = misc.normalize_array(data_visits)
             # We need to return this data aswell.
-            return self.children[np.argmax(choices)], PID + data_input + data_target
+            return self.children[np.argmax(choices)], PID + data_input + data_target # * Return data per move.
 
         # * Select child with best score
         return self.children[np.argmax(choices)] # Select index of best child.

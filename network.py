@@ -65,7 +65,13 @@ class Model(nn.Sequential):
 
     def store(self,epoch,optimizer,loss, datapath=""): # Need model, and optimizer
         #Store ourself in a file for later use
-        save_path = "models/"+ self.name + "_" + str(epoch) # save a new network with an unique ID, name + epoch
+        save_dir = "models/"+self.name
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        save_path = save_dir+"/"+ self.name + "_" + str(epoch) # save a new network with an unique ID, name + epoch
+        
+        # Need to check if directory exists
+
         torch.save({'epoch':epoch,
                     'model_state_dict':self.state_dict(),
                     'optimizer_state_dict':optimizer.state_dict(),
@@ -197,7 +203,11 @@ def train_architecture_testing():
     dataset_train = Datamanager.Datamanager("Data/data_random.csv",dim=5)
     dataset_test = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
     
-    model = Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,60), nn.ReLU(), nn.Linear(60,25), nn.Softmax(dim=-1), name="rms_mod")
+    model = Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod")
+    #model =  Model(nn.Conv1d(50,52,kernel_size=4,stride=1,padding=1),nn.ReLU(),nn.MaxPool1d(kernel_size=4, stride=2, padding=1), nn.Linear(50,25) ,nn.Softmax(dim=-1), name="rms_mod")
+    # Dimentions: 52 -> 100, maxpol: 100 -> 
+    #print(model)
+    #exit()
     # Create a model to train on.
     #optimizer = optim.Adam(model.parameters(), lr=1e-2,betas=(0.9,0.999),eps=1e-6) # 0.14, 0.18, 2: 0.10 ,0.133
     #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 4 ...
@@ -214,11 +224,10 @@ def train_architecture_testing():
     #loss_function = pyloss.NLLLoss2d()
     #loss_function = pyloss.MultiLabelSoftMarginLoss()
     #loss_function = CategoricalCrossEntropyLoss()
-    #exit()
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
-    for itt in range(1500):
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
+    for itt in range(500):
         loss_train, loss_T = train(model,batch=50, iterations=10,
-        casemanager_train=dataset_train,casemanager_test=dataset_test,optimizer = optimizer,loss_function=loss_function,verbose=100)
+        casemanager_train=dataset_train,casemanager_test=dataset_test,optimizer = optimizer,loss_function=loss_function,verbose=200)
         scheduler.step(loss_T)
         print("itteration {}  loss_train: {:.8f} loss_test: {:.8f}  lr: {} ".format(itt,loss_train, loss_T, optimizer.param_groups[0]["lr"]))
         #print(optimizer["lr"])

@@ -8,6 +8,7 @@ from Actor import Actor
 import network
 import misc
 import torch.nn as nn
+import controller
 #import Actor.Actor as Actor
 
 class BasicClientActor(BasicClientActorAbs):
@@ -30,12 +31,14 @@ class BasicClientActor(BasicClientActorAbs):
         legal_states = misc.get_legal_states(state_board) # Legal states.
 
         state_board = misc.int_board_to_network_board(state_board) # Return [1,0,0] to [1,0,0,0,0,0]
+        if(state[0] == 1): # Black is player 1 in my game, need to flip.
+            PID = misc.int_to_binary_rev(2)
+        else:
+            PID = misc.int_to_binary_rev(1)
+        #state_board.extend(PID) # Add player id to network.
+        #PID = misc.int_to_binary_rev(state[0])
 
-        PID = misc.int_to_binary_rev(state[0]) # add player ID to the front.
-
-        state_board.extend(PID) # Add player id to network.
-
-        next_move = ANET.get_action(state_board, legal_states)
+        next_move = ANET.get_action(PID + state_board, legal_states)
 
         # This is an example player who picks random moves. REMOVE THIS WHEN YOU ADD YOUR OWN CODE !!
         #next_move = tuple(self.pick_random_free_cell(state, size=int(math.sqrt(len(state)-1))))
@@ -158,8 +161,10 @@ class BasicClientActor(BasicClientActorAbs):
 if __name__ ==  '__main__':
     # TODO: add flexability to network creation.
     #model = network.Model(insize = 52, outsize = 25, name="network")
-    model = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,60), nn.ReLU(), nn.Linear(60,25), nn.Softmax(dim=-1), name="rms_mod",filepath="../models/rms_mod_10000")
-    ANET = Actor(model = model)
+    #model = controller.HEX_NET("hexnet",dim=5)
+    model = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod")
+    #model = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,60), nn.ReLU(), nn.Linear(60,25), nn.Softmax(dim=-1), name="rms_mod",filepath="../models/rms_mod_10000")
+    ANET = Actor(model = model, filepath="../models/rms_mod/rms_mod_10000")
     bsa = BasicClientActor(verbose=True)
     bsa.connect_to_server()
 
