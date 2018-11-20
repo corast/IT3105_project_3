@@ -50,21 +50,20 @@ def NETWORK_TEST():
     #nn.Linear(input_dim, 40),nn.ReLU(),nn.Linear(40,target_dim), nn.Softmax(dim=-1)) 
     print(model)
 
-class Reshape(nn.Module): # Resape class
-    def __init__(self, *args):
-        super(Reshape, self).__init__()
-        self.shape = args
-
+class Flatten(nn.Module):
     def forward(self, x):
-        return x.view(self.shape)
+        #print(x.shape)
+        return x.view(x.size()[0], -1)
 
 class Model(nn.Sequential):
-    def __init__(self, *args,name="Network", filepath=None):
+    def __init__(self, *args,name="Network", filepath=None, input_type=1):
         #print("args",args)
         super().__init__(*args) # Pass rest of network to parent, to create the network with Sequential.
         self.name = name
+        self.input_type = input_type
         if(filepath is not None): # weights from filepath.
             self.load_model(filepath)
+        
 
     def evaluate(self, input):
         """ Use the network, as policy """

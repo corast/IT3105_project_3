@@ -104,12 +104,10 @@ class HEX_Cell():
             if(not neighbour.connected.__eq__(connected)):
                 neighbour.update_neighbours(player, connected)
 
-
     def terminal_state(self):
         if(sum(self.connected) == 2):
             return True
         return False
-
 
     def __str__(self): # (edge, state)
         string = "({} {})".format(self.x, self.y)
@@ -278,7 +276,7 @@ class HEX_State(State):
 
     def switch_turns_random(self):
         """Testing """
-        self.player_turn = random.choice([1,2]) # randomly choice between which player starts 
+        self.player_turn = int(random.choice([1,2])) # randomly choice between which player starts 
 
     def __str__(self): # bla
         data = {"Player_turn": self.player_turn,

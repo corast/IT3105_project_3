@@ -87,12 +87,12 @@ class MCTS():
         # * [(0,0)=3,(0,1)=1,(0,2)=40,..., PID]
         # We need to create a seperate node.best_child function for when we actually selects a move, since we might want to get the data aswell.
         if(self.gather_data): # * Whether not we need to add data to buffer or not.
-            victor,data = node.get_best_child(root_player, data=True) # Get best state node from tree.
+            victor,data = node.get_best_child(c=0, data=True) # Get best state node from tree.
             #Store the data.
             self.dataset.update_buffer(data = data) # Add row to buffer.
             #self.dataset.update_csv_limit(data = [data]) # Add data row to buffer. 
         else: # We dont do 
-            victor = node.get_best_child(root_player) # Get best state node from tree.
+            victor = node.get_best_child(c=0) # Get best state node from tree.
         return victor # Return best state node, which we want to keep.
 
         #return node.best_child(node.game.get_current_player()).action # After we are done, we select best action from parent.
@@ -119,12 +119,12 @@ class MCTS():
                     victor.game.display_board()
         # Check if we need to update csv file.
         if(self.dataset is not None):
-            self.dataset.update_csv_limit(limit=1000) # 
+            self.dataset.update_csv_limit() # 
         return node # return termal node, which is the final state of our game.
 
     #TODO: had self.root.is_termal_node(), and self.root = Node(game=new_state.game,parent=self.root, action=new_state.action, node_depth=new_state.node_depth)
     def play_batch(self, num_sims, games, start_player=1,verbose=True):
-        if(start_player < 1 or start_player > 3):
+        if((start_player < 1 or start_player > 3) and type(start_player) != int):
             raise ValueError('Value of {} as P is not supported'.format(start_player))
         
         wins = [0,0] # Keep track of amount of wins for both players,
@@ -192,6 +192,7 @@ class MCTS():
         if(epoch == 0): # Save network if we are starting from scratch.
             #Start by saving the network as agent 0.
             self.rollout_policy.store(epoch=1, optimizer=optimizer, loss=1000)#Max loss to begin with.
+            #pass
 
         if(variables.verbose > variables.play):
             print("Start training with self play using policy network")

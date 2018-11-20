@@ -53,7 +53,7 @@ class Node():
 
     # ****** SELECT FUNCTION
 
-    def best_child(self, root_player, c=2, data=False): # Return best child from a parent node 
+    def best_child(self, root_player, c=2): # Return best child from a parent node 
         # need to check children to self, and pick the action which has the best value / Visits.
         # Must handle children that has not been visited yet
         # create a list of every child which has not been explored
@@ -88,12 +88,13 @@ class Node():
                 action = child.action # Should be a touple for HEX.
                 visits = child.num_visits # What we want to store.
                 data_visits[action[0]*dimention[0]+action[1]] = visits
-            player = self.game.get_current_player()
+            player = [self.game.get_current_player()]
             #PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
             data_input = self.game.get_state_as_input()
             #data_input.extend(0,PID)
             data_target = misc.normalize_array(data_visits)  
             #  One row of data : [player_id, row1, row2, row3,...]
+            #print(type(player), type(data_input), player, data_input)
             return self.children[np.argmax(choices)], player + data_input + data_target # * Return data per move.
 
         # * Select child with best score
@@ -116,16 +117,25 @@ class Node():
     # ***** ROLLOUT FUNCTIONS
 
     
-    def rollout_policy_network(self, rollout_state,  anet:network.Module, greedy): # TODO: high probability for random to begin with.
+    def rollout_policy_network(self, rollout_state,  anet:network.Model, greedy): # TODO: high probability for random to begin with.
         #TODO: Fix inputs...
         # We neede to get our state + PID as input.
-        PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
-        data_input = self.game.get_state_as_input()
-        data_input = PID + data_input # input to our network.
+        #PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
+        data_input = [self.game.get_state_as_input()]
+        #data_input = PID + data_input # input to our network.
         # Need to convert list to tensor.
-        output = anet.evaluate(torch.FloatTensor(data_input)) # output should be an vector with same size as board.
+        data_pid=[self.game.get_current_player()]
+        if(anet.input_type == 1):
+            network_input = misc.get_normal_input(data_pid,data_input)
+        elif(anet.input_type == 2): 
+            network_input = misc.get_cnn_input(data_pid,data_input,self.game.get_dimentions()[0])
+        #misc.get_input_network(data_pid=data_pid, data_input)
+        #anet.input_type
+        #print("network_input",network_input.shape)
+        output = anet.evaluate(network_input) # output should be an vector with same size as board.
 
         output = torch.Tensor.numpy(output.detach()) # convert to numpy array.
+        #print(output)
         legal_moves = rollout_state.get_legal_actions_bool() # 1 is legal, 0 is illegal.
         
         actions = np.multiply(output, legal_moves) # Need to select the highest value from this one.

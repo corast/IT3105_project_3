@@ -58,11 +58,20 @@ def ANET_TEST_2(name, dim): # TODO FIX
     return network.Model(nn.Linear(input_dim, 80),nn.ReLU(),
         nn.Linear(80, 40),nn.ReLU(),
         nn.Linear(40,target_dim), nn.Softmax(dim=-1), name=name)
+    # K = filter_size, W = input height/leight, P padding, S stride
+    # zero-padding = (K-1)/2
+    # O = (W-K + 2P)/S + 1
 
 def HEX_CNN(name, dim):
     input_dim = (dim*dim*2)+2
     target_dim = dim*dim 
-    return network.Model(network.Reshape(3,4,5))
+    return network.Model(                                    # O = (5-3 +2) +1 = 5 
+        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
+        nn.ReLU(),
+        #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
+        network.Flatten(),
+        nn.Linear(75, 25),
+        nn.Softmax(dim=-1), name=name,input_type=2)
 
 def CUSTON_NET(name, dim):
     input_dim = (dim*dim*2)+2
@@ -128,11 +137,14 @@ if __name__=="__main__":
     parser_a.add_argument("-tf","--training_frequency",help="how often we train, w.r.t games", default=1,
                     type=check_positive)
     
-    parser_a.add_argument("-ig","--init_games",help="number of games we init random data", default=10,
+    parser_a.add_argument("-ig","--init_games",help="number of games we init random data", default=0,
                     type=check_positive)
     parser_a.add_argument("-is","--init_sims",help="number of simulations we init random data", default=5000,
                     type=check_positive)
     parser_a.add_argument("-it","--init_train", help="Init training on data",type=bool, default=False)
+
+
+    parser_a = subparsers.add_parser("DATA") # Only store data.
 
 
     parser_b = subparsers.add_parser("TOPP") # TOPP tournament
@@ -155,13 +167,14 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/anet_test_2.csv",dim=args.dimentions)
+    datamanager = Datamanager("Data/ramdom_5000.csv",dim=args.dimentions,modus=1)
     
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = ANET_TEST_2("ANET-TEST-2",args.dimentions) # Use default values
+            rollout_policy = HEX_CNN("HEX-NET",args.dimentions) # Use default values
+            print("Network", rollout_policy)
             rollout_policy.apply(network.weights_init) # init weights and biases.
             #TODO: handle continue training from file.
             mcts = MCTS(node=root, dataset=datamanager,
@@ -198,7 +211,7 @@ if __name__=="__main__":
             
             mcts.play_batch_with_training(optimizer=optimizer,epoch=epoch,
             loss_function=loss_function,games=games,training_frequency=training_frequency, storage_frequency=storage_frequency, num_sims=args.num_sims,
-            iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games,init_train=init_train)
+            iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games, init_train=init_train)
         elif(args.sub_action == "TOPP"):
             # Load models from file and start tournament between them.
             topp_games = args.topp_games
@@ -209,6 +222,9 @@ if __name__=="__main__":
             Actor.tournament(game,games=100, 
             models=[model1], random=True)
             pass
+        elif(args.sub_action == "DATA"):
+            mcts.gather_data = True # need to specificly set this.
+            mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
         else: # Assume we just want to play
             mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
             

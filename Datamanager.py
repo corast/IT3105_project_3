@@ -130,8 +130,10 @@ class Datamanager():
             target = list(map(float,row[(self.dim*self.dim)+1:]))
             data_inputs.append(input)
             data_targets.append(target)
-            
-        t_inputs = self.__switcher.get(self.modus)(data_pid, data_inputs) # Get inputs
+
+        # Depending on modus: 
+        #        
+        t_inputs = self.__switcher.get(self.modus)(data_pid, data_inputs,self.dim) # Get inputs
         t_targets = torch.from_numpy(np.array(data_targets)).float()
 
         return t_inputs, t_targets
@@ -140,7 +142,7 @@ class Datamanager():
         """ return number of rows in csv file"""
         data = self.read_csv()
         return len(data)
-    def normal(self,data_pid,data_inputs):
+    def normal(self,data_pid,data_inputs,dim):
         # inputs:  PID + board_state
         PID =  np.array([misc.int_to_binary_rev(pid) for pid in data_pid])
         inputs = np.array([misc.one_hot_array(board) for board in data_inputs])
@@ -148,14 +150,14 @@ class Datamanager():
         # * PID + board_state as one hot vectors per cell.
         return torch.from_numpy(inputs).float() # * (Bx52) 
 
-    def cnn(self,data_pid,data_inputs): # Tensor with shape (B, dim,dim, dim,dim, dim,dim)
+    def cnn(self,data_pid,data_inputs,dim): # Tensor with shape (B,channels,dim,dim)
         PID = np.array([np.full((self.dim,self.dim),(2-pid)) for pid in data_pid]) # Player 2 = 0, Player 1 = 1
         inputs = np.array([misc.get_player_states(board,self.dim,ravel=False) for board in data_inputs])
         PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1],PID.shape[2]))
         inputs = np.concatenate((inputs,PID),axis=1)
         return torch.from_numpy(inputs).float() # * (B x 3 x 5 x 5) for CNN2d
 
-    def cnn_flatten(self,data_pid,data_inputs):# Tensor with shape (B, dim*dim, dim*dim, dim*dim)
+    def cnn_flatten(self,data_pid, data_inputs, dim):# Tensor with shape (B, channels, dim*dim)
         PID = np.array([np.full((self.dim*self.dim),(2-pid)) for pid in data_pid]) # Player 2 = 0, Player 1 = 1
         #inputs = torch.from_numpy(np.array([misc.get_player_states(board,self.dim,ravel=True) for board in data_inputs]))
         #boards = [misc.get_player_states(board,self.dim,ravel=True) for board in data_inputs] # return list of touples
