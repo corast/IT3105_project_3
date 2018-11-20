@@ -62,7 +62,7 @@ def ANET_TEST_2(name, dim): # TODO FIX
     # zero-padding = (K-1)/2
     # O = (W-K + 2P)/S + 1
 
-def HEX_CNN(name, dim):
+def HEX_CNN(name, dim,filepath=None): # Best so far..
     input_dim = (dim*dim*2)+2
     target_dim = dim*dim 
     input_type = 2
@@ -72,12 +72,12 @@ def HEX_CNN(name, dim):
         #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
         network.Flatten(),
         nn.Linear(75, 25),
-        nn.Softmax(dim=-1), name=name,input_type=input_type)
+        nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
 
 def CUSTON_NET(name, dim):
     input_dim = (dim*dim*2)+2
     target_dim = dim*dim
-    model = network.Model(network.Reshape(3,4,5),
+    model = network.Model(network.Flatten(),
         nn.Linear(input_dim, 40),nn.ReLU(),
         nn.Linear(40,target_dim), nn.Softmax(dim=-1))
     return model
@@ -119,7 +119,7 @@ if __name__=="__main__":
     """parser.add_argument("-a","--action", choices=["train","play","play_tourn","test","data"],
                         required=True, type=str)  """
     parser.add_argument("-r","--rollout",choices=["random","ANET"],
-                        default = "random") 
+                        default = "random", required=False) 
     parser.add_argument("-d","--dimentions", type=check_positive, help="Dimention of board", 
                 default=5, required=False)
     parser.add_argument("-tl","--time_limit", default = False, type=bool,
@@ -148,8 +148,9 @@ if __name__=="__main__":
     parser_b = subparsers.add_parser("TOPP") # TOPP tournament
 
     parser_b.add_argument("-g","--topp_games",type=check_positive, default=10)
-    parser_b.add_argument("-a","--agents",type=str, nargs='*' , required =True)
-    parser_b.add_argument("-r","--random",type=bool)
+    parser_b.add_argument("-mp","--model_path",type=str, required=True)
+    #parser_b.add_argument("-a","--agents",type=str, nargs='*' , required =True)
+    parser_b.add_argument("-r","--random",type=bool, default=False)
 
     parser_c = subparsers.add_parser("DATA") # Only store data.
     parser_d = subparsers.add_parser("FIX")
@@ -203,25 +204,38 @@ if __name__=="__main__":
             # Load previous model from file if exists.
             if(rollout_policy is not None): # * Load from prev saved model if exists.
                 name = rollout_policy.name
-                path = misc.find_models(name)
+                path = misc.find_newest_model(name)
                 if(path is not None): # TODO: make sure optimizer is the same, otherwise error here.
                     # Load model from path.
                     loss, epoch = rollout_policy.load_model(path,optimizer=optimizer) # Load optimizer settings too.
 
                     print("Loading self from path \"{}\" at epoch {}".format(path, epoch))
-            
+            else:
+                print("Using random rollout only ----------- ")
             mcts.play_batch_with_training(optimizer=optimizer,epoch=epoch,
             loss_function=loss_function,games=games,training_frequency=training_frequency, storage_frequency=storage_frequency, num_sims=args.num_sims,
             iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games, init_train=init_train)
         elif(args.sub_action == "TOPP"):
             # Load models from file and start tournament between them.
             topp_games = args.topp_games
-            agents = args.agents
-            print("TOPP", agents, topp_games)
+            model_path = args.model_path
+            #Model path should be same name as path..
+            model = HEX_CNN("E-HEX-CNN",5)
+            print("TOPP", model_path, topp_games)
             # TODO: pass subfolder in top
-            model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
-            Actor.tournament(game,games=100, 
-            models=[model1], random=True)
+            print(misc.find_models(model_path))
+            actors = []
+            for path in misc.find_models(model_path):
+                s_path = path.split("_") # get epoch name.
+                name = model_path + "-"+s_path[-1]
+                #name = "-".join(model_path) # Last index should be our name
+                actors.append(Actor.Actor(HEX_CNN(name=name,dim=5,filepath=path)))
+                #models.append()
+            print(actors)
+
+            #model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
+            #Actor.tournament(game,games=100, 
+            #models=[model1], random=True)
             pass
         elif(args.sub_action == "DATA"):
             mcts.gather_data = True # need to specificly set this.

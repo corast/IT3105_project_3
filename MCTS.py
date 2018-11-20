@@ -204,8 +204,9 @@ class MCTS():
         epsilon = 0.95 # Start at 0.95 % probability random.
         #97,5 90, 80, 60
         #1/version 
-        epsilon = 0.975
+        epsilon = 1
         decrease = 0.025 # For each training dercrease by 5
+        epsilon = max(0,1-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
 
         for game in range(1+epoch, games + 1 + epoch): # number of games we play
             print("Game {}".format(game))
