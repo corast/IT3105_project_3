@@ -5,7 +5,10 @@ import numpy as np
 import numpy.random as random
 from math import cos, sin, sqrt, radians
 from colorama import Fore, Style, Back, init
+from clint.textui import colored
+#from clint import coloured
 import variables
+import time
 
 from misc import *
 # TODO: Evaluate whether or not we need to update an neighbour state.
@@ -299,7 +302,6 @@ class HEX_State(State):
                 #y_ = -x + y + self.dimy-1
                 board_p[x_].insert(0,cell) # Add to row as first index, corresponding to output.
 
-        init(autoreset=True) # Automaticly reset colour back to normal after every printout.
         # * With colour
         for x,row in enumerate(board_p):
                 # TODO: COLOUR THE PATH GREEN THAT HAS WON.
@@ -307,9 +309,9 @@ class HEX_State(State):
                 # Figure out what colour the state should be in. 
                 state = Fore.WHITE+str(cell.state)
                 if(cell.state == 2):
-                    state = Fore.RED + str(cell.state)
+                    state = colored.red(str(cell.state))
                 elif(cell.state == 1):
-                    state = Fore.BLUE + str(cell.state)
+                    state = colored.blue(str(cell.state))
 
                 # if state is current piece, we can colour it yellow.
                 # Green states should be the correct path.
@@ -327,9 +329,9 @@ class HEX_State(State):
                         else:
                             # Need to check wheter we are a blue or red edge
                             if(cell.edge_v.__eq__(HEX_Cell.BLACK_L)):
-                                string = Fore.BLUE + "/"
+                                string = colored.blue("/")
                             else:
-                                string = Fore.RED + "\\"
+                                string = colored.red("\\")
                         print("{}{}".format(string,state),end="")
                 elif(y == len(row)-1): # * If we are the last element on the row
                     i_y = self.intent_index(x) 
@@ -338,14 +340,13 @@ class HEX_State(State):
                     else:
                         # * We need to check wheter or not we are a blue or red edge.
                         if((cell.edge_v).__eq__(HEX_Cell.RED_T)): # We need to print red if we are a red edge, or blue otherwise
-                            string = Fore.RED + "\\"
+                            string = colored.red("\\")
                         else:
-                            string = Fore.BLUE + "/"
+                            string = colored.blue("/")
                     print("---{}{}".format(state,string),end="")
                 else: # * Any element in between the rows.
                     print("---{}".format(state),end="")
             print("")
-
 
         # We want the board to look like this:
         #                       

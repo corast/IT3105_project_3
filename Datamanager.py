@@ -169,7 +169,36 @@ class Datamanager():
 
         return torch.from_numpy(inputs).float() # * (B x 3 x 25)  For CNN1d
 
+    # Extra functions almost never used.
 
+    def fix_board_state(self):
+        raise Exception("Don't use this function..")
+        print("Fixing", self.filepath)
+        print("Before:",len(self.buffer),self.buffer[0])
+        #data = self.read_csv() 
+        # We want to get original board state from each row.
+        # basicly remove dimx*dimx+2 from each row and translate back.
+        # [0,0] -> 0, [0,1] -> 2, [1,0] -> 1.
+        for r,row in enumerate(self.buffer):
+            #Want to remove first 52 numbers.
+            data = row
+            board = row[:52] # first 52 numbers
+            targets = row[52:] # target values
+            new_row = []
+            i = 0
+            while i < len(board)-1:
+                l_data = [board[i],board[i+1]] 
+                if(l_data == ["1","0"]):
+                    new_row.append("1")
+                elif (l_data == ["0","1"]):
+                    new_row.append("2")
+                else:
+                    new_row.append("0")
+                i +=2
+            self.buffer[r] = new_row + targets
+        
+        print("After:",len(self.buffer),self.buffer[0])
+        self.update_csv_limit()
 
 def test_return_batch():
     dataset = Datamanager("Data/data_r_test.csv",5)

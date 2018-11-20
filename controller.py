@@ -65,13 +65,14 @@ def ANET_TEST_2(name, dim): # TODO FIX
 def HEX_CNN(name, dim):
     input_dim = (dim*dim*2)+2
     target_dim = dim*dim 
+    input_type = 2
     return network.Model(                                    # O = (5-3 +2) +1 = 5 
         nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
         nn.ReLU(),
         #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
         network.Flatten(),
         nn.Linear(75, 25),
-        nn.Softmax(dim=-1), name=name,input_type=2)
+        nn.Softmax(dim=-1), name=name,input_type=input_type)
 
 def CUSTON_NET(name, dim):
     input_dim = (dim*dim*2)+2
@@ -144,14 +145,14 @@ if __name__=="__main__":
     parser_a.add_argument("-it","--init_train", help="Init training on data",type=bool, default=False)
 
 
-    parser_a = subparsers.add_parser("DATA") # Only store data.
-
-
     parser_b = subparsers.add_parser("TOPP") # TOPP tournament
 
     parser_b.add_argument("-g","--topp_games",type=check_positive, default=10)
     parser_b.add_argument("-a","--agents",type=str, nargs='*' , required =True)
     parser_b.add_argument("-r","--random",type=bool)
+
+    parser_c = subparsers.add_parser("DATA") # Only store data.
+    parser_d = subparsers.add_parser("FIX")
 
     args = parser.parse_args()
 
@@ -167,14 +168,14 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/ramdom_5000.csv",dim=args.dimentions,modus=1)
+    datamanager = Datamanager("Data/cnnet_2.csv",dim=args.dimentions,modus=2)
     
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = HEX_CNN("HEX-NET",args.dimentions) # Use default values
-            print("Network", rollout_policy)
+            rollout_policy = HEX_CNN("E-HEX-CNN",args.dimentions) # Use default values
+            print("Network", rollout_policy,"input-type",rollout_policy.input_type)
             rollout_policy.apply(network.weights_init) # init weights and biases.
             #TODO: handle continue training from file.
             mcts = MCTS(node=root, dataset=datamanager,
@@ -225,6 +226,8 @@ if __name__=="__main__":
         elif(args.sub_action == "DATA"):
             mcts.gather_data = True # need to specificly set this.
             mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
+        elif(args.sub_action == "FIX"):
+            datamanager.fix_board_state()
         else: # Assume we just want to play
             mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
             

@@ -42,7 +42,7 @@ class MCTS():
                 return self.tree_policy(node.best_child(root_player,c=2), root_player) # continue search from best child.
         return node # leaf node
 
-    def simulate_best_action(self, node, num_sims): # If time is True, num_sims is in seconds.
+    def simulate_best_action(self, node, num_sims,epsilon=0): # If time is True, num_sims is in seconds.
         """ Return best action from a given state, simulating play from that state, with num_sims itterations to update states.
             node must be a copy of current root state, otherwise we will not simulate play."""
         # We need to create a copy of the node passed in, because we don't want to make changes to original root node.
@@ -58,7 +58,7 @@ class MCTS():
                     winner = leaf.rollout(root_player)
                 else: # We want to use another policy for rollout.
                     #TODO: pass the policy to the rollout function.
-                    winner = leaf.rollout(root_player, self.rollout_policy, greedy=self.greedy) # Rollout from this node, and get the reward from this stage. 
+                    winner = leaf.rollout(root_player, self.rollout_policy, greedy=self.greedy,epsilon=epsilon) # Rollout from this node, and get the reward from this stage. 
                 #print("leaf", leaf, leaf.game)
                 # Victor is the node in the whole simulated tree that is considered best.
                 winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
@@ -98,11 +98,11 @@ class MCTS():
         #return node.best_child(node.game.get_current_player()).action # After we are done, we select best action from parent.
     # TODO: Episode = game, intra-epsodes moves ingame, + keep tree in intra episode.
     
-    def play_full_game(self, root_node, num_sims): # Play a whole game using MTCS for both players, from root_node
+    def play_full_game(self, root_node, num_sims,epsilon = 0): # Play a whole game using MTCS for both players, from root_node
         """ Play full game with MCTS. node is final state of game after completion """
         node = copy.deepcopy(root_node) # make copy, so we wont make changes to real game
         while(not node.is_termal_node()): # We are termal_node if game is finished at state.
-            victor = self.simulate_best_action(node, num_sims) # Get best state node from node state.
+            victor = self.simulate_best_action(node, num_sims,epsilon=epsilon) # Get best state node from node state.
             # * Change root state to best action/state from simulation, but keep all previous history.
             node = victor
             if(variables.verbose >= variables.debug):
@@ -201,14 +201,20 @@ class MCTS():
         loss_history = [] # Store previous losses
         #scheduler = torch.optim.lr_scheduler(optimizer,step_size = 30, )
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
+        epsilon = 0.95 # Start at 0.95 % probability random.
+        #97,5 90, 80, 60
+        #1/version 
+        epsilon = 0.975
+        decrease = 0.025 # For each training dercrease by 5
 
         for game in range(1+epoch, games + 1 + epoch): # number of games we play
             print("Game {}".format(game))
             sim_node = copy.deepcopy(self.root) # Copy root state of game. # So that we have a starting point to simulate from.
             sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
             # * Play game
-
-            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims) # get last state of game.
+            print("Using epsilon",epsilon, "training_count", training_count)
+            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims, epsilon=epsilon) # get last state of game.
+            
             # Check winner.
             if(game % training_frequency == 0): # We want to train between every game?
                 #We train.
@@ -218,10 +224,14 @@ class MCTS():
                 scheduler.step(loss)
                 #print(optimizer.param_groups[0]["lr"])
                 # collect the last x losses from history.
-
                 training_count += 1 # update training count
+                epsilon = max(0,1-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
                 # Check if we want to store this trained policy network. 
-                if(training_count % storage_frequency == 0): # store every x training times.
+                if(training_count % storage_frequency == 0 or game == games+epoch): # store every x training times, or at last itteration.
+                    # Decrease epsilon value.
+                    # training count, is basicly epoch with tc = 1
+                    
+                    #epsilon = epsilon/(training_count+1) # 
                     print("Storing network...")
                     self.rollout_policy.store(epoch=training_count, optimizer = optimizer, loss = loss, datapath=self.dataset.filepath)
                     # We need to save our epoch. networkName_0, networkName_1, networkName_2, etc.

@@ -201,24 +201,33 @@ optimizer = optim.Adam(model.parameters(),
 #criterion = nn.CrossEntropyLoss()
 
 #checkpoint = torch.load(checkpoint_path)
-
+def HEX_CNN(name, dim):
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim 
+    return Model(                                    # O = (5-3 +2) +1 = 5 
+        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
+        nn.ReLU(),
+        #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
+        Flatten(),
+        nn.Linear(75, 25),
+        nn.Softmax(dim=-1), name=name,input_type=2)
 
 def train_architecture_testing():
     torch.manual_seed(999) # set seeds
     #np.random.seed(999)
     #Load datamanager for both files.
-    dataset_train = Datamanager.Datamanager("Data/data_random.csv",dim=5)
-    dataset_test = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
-    
-    model = Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod")
+    dataset_train = Datamanager.Datamanager("Data/random_fix.csv",dim=5,modus=2)
+    #dataset_test = Datamanager.Datamanager("Data/data_r_test.csv",dim=5)
+    model = HEX_CNN(name="CNNET_TEST", dim=5)
+    #model = Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod")
     #model =  Model(nn.Conv1d(50,52,kernel_size=4,stride=1,padding=1),nn.ReLU(),nn.MaxPool1d(kernel_size=4, stride=2, padding=1), nn.Linear(50,25) ,nn.Softmax(dim=-1), name="rms_mod")
     # Dimentions: 52 -> 100, maxpol: 100 -> 
     #print(model)
     #exit()
     # Create a model to train on.
-    #optimizer = optim.Adam(model.parameters(), lr=1e-2,betas=(0.9,0.999),eps=1e-6) # 0.14, 0.18, 2: 0.10 ,0.133
+    optimizer = optim.Adam(model.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6,) # 0.14, 0.18, 2: 0.10 ,0.133
     #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 4 ...
-    optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test
+    #optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test
     #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0) # 0.40 (0.45 train) 0.65 test
     #print(optimizer)
     
@@ -231,12 +240,12 @@ def train_architecture_testing():
     #loss_function = pyloss.NLLLoss2d()
     #loss_function = pyloss.MultiLabelSoftMarginLoss()
     #loss_function = CategoricalCrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
+    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
     for itt in range(500):
-        loss_train, loss_T = train(model,batch=50, iterations=10,
-        casemanager_train=dataset_train,casemanager_test=dataset_test,optimizer = optimizer,loss_function=loss_function,verbose=200)
-        scheduler.step(loss_T)
-        print("itteration {}  loss_train: {:.8f} loss_test: {:.8f}  lr: {} ".format(itt,loss_train, loss_T, optimizer.param_groups[0]["lr"]))
+        loss_train = train(model,batch=50, iterations=10,
+        casemanager_train=dataset_train, optimizer = optimizer, loss_function=loss_function, verbose=200)
+        #scheduler.step(loss_train)
+        print("itteration {}  loss_train: {:.8f} lr:{}".format(itt, loss_train, optimizer.param_groups[0]["lr"]))
         #print(optimizer["lr"])
     model.store(epoch=10000, optimizer = optimizer, loss = loss_train)
 
