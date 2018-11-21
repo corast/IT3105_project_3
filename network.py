@@ -108,11 +108,12 @@ class Model(nn.Sequential):
     def get_action(self, input, legal_moves): #should return an specific action.
         if(not (type(input) == torch.Tensor)):
             print(type(input),"is not a tensor")
+        #TODO: Fix legal moves..
         prediction =  self.evaluate(input) # * Return dim*dim vector.
         #Return argmax as touple.
         output = torch.Tensor.numpy(prediction.detach()) # convert to numpy array.
         #legal_moves = rollout_state.get_legal_actions_bool() # 1 is legal, 0 is illegal.
-        dim = np.sqrt(len(legal_moves)).astype(int)
+        dim = np.sqrt(len(legal_moves)).astype(int) # Assumes board is square
 
         dims = (dim,dim)
         actions = np.multiply(output, legal_moves) # Need to select the highest value from this one.

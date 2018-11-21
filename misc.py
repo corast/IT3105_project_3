@@ -148,7 +148,7 @@ def get_cnn_input(data_pid, data_inputs, dim): # This can be a list of lists.
     inputs = np.concatenate((inputs,PID),axis=1)
     return torch.from_numpy(inputs).float() # * (B x 3 x 5 x 5) for CNN2d
 
-def get_normal_input(data_pid,data_inputs):
+def get_normal_input(data_pid,data_inputs): # Don't need to know board dimentions.
     # inputs:  PID + board_state
     PID =  np.array([int_to_binary_rev(pid) for pid in data_pid])
     inputs = np.array([one_hot_array(board) for board in data_inputs])
