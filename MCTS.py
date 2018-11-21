@@ -202,9 +202,8 @@ class MCTS():
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
         #97,5 90, 80, 60
         #1/version 
-        epsilon = 1
         decrease = 0.025 # For each training dercrease by 5
-        epsilon = max(0,1-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
+        epsilon = max(0,0.525-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
 
         for game in range(1+epoch, games + 1 + epoch): # number of games we play
             print("Game {}".format(game))
@@ -225,7 +224,7 @@ class MCTS():
                 #print(optimizer.param_groups[0]["lr"])
                 # collect the last x losses from history.
                 training_count += 1 # update training count
-                epsilon = max(0,1-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
+                epsilon = max(0,0.525-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
                 if(epsilon <= 0): # Don't want to decrease learning rate until we remove random rollout.
                     scheduler.step(loss) # If loss stagnates over 10 games, we need to decrease it.
                 # Check if we want to store this trained policy network. 

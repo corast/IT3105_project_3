@@ -11,6 +11,7 @@
 import csv # Gives us the oppurtunity to write to an file.
 import numpy as np
 import random
+#import pytorch.torch as torch
 import torch
 import os
 import misc
@@ -137,6 +138,10 @@ class Datamanager():
         t_targets = torch.from_numpy(np.array(data_targets)).float()
 
         return t_inputs, t_targets
+
+    def return_keras(self):
+        # Return whole dataset buffer with targets as specified.
+        pass
 
     def get_buffer_size(self):
         """ return number of rows in csv file"""
