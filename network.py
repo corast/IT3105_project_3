@@ -25,8 +25,6 @@ import misc
 #        else:
 #            self.reduction = reduction
 
-
-
 class MultiClassCrossEntropyLoss(_Loss):
     def forward(self, input, target):
         loss = -torch.mean(torch.sum(torch.sum(torch.sum(target*torch.log(input), dim=-1), dim=-1), dim=-1))
@@ -214,7 +212,7 @@ def HEX_CNN(name, dim):
         nn.Softmax(dim=-1), name=name,input_type=2)
 
 def train_architecture_testing():
-    torch.manual_seed(999) # set seeds
+    #torch.manual_seed(999) # set seeds
     #np.random.seed(999)
     #Load datamanager for both files.
     dataset_train = Datamanager.Datamanager("Data/random_fix.csv",dim=5,modus=2)
@@ -240,7 +238,7 @@ def train_architecture_testing():
     #loss_function = pyloss.SmoothL1Loss()
     #loss_function = pyloss.NLLLoss2d()
     #loss_function = pyloss.MultiLabelSoftMarginLoss()
-    #loss_function = CategoricalCrossEntropyLoss()
+    loss_function = CategoricalCrossEntropyLoss()
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
     for itt in range(500):
         loss_train = train(model,batch=50, iterations=10,
@@ -248,6 +246,6 @@ def train_architecture_testing():
         #scheduler.step(loss_train)
         print("itteration {}  loss_train: {:.8f} lr:{}".format(itt, loss_train, optimizer.param_groups[0]["lr"]))
         #print(optimizer["lr"])
-    model.store(epoch=10000, optimizer = optimizer, loss = loss_train)
+    model.store(epoch=500, optimizer = optimizer, loss = loss_train)
 
 #train_architecture_testing()

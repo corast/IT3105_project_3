@@ -229,7 +229,8 @@ if __name__=="__main__":
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6)
             #loss_function = nn.MultiLabelMarginLoss()
-            loss_function = pyloss.MSELoss(reduction='sum') # a bit better
+            #loss_function = pyloss.MSELoss(reduction='sum') # a bit better
+            loss_function = network.CategoricalCrossEntropyLoss()
             #loss_function = pyloss.MSELoss()
             # Load previous model from file if exists.
             if(rollout_policy is not None): # * Load from prev saved model if exists.
