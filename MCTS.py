@@ -22,10 +22,8 @@ class MCTS():
         #TODO: handle multiple policies between players.
         # 1 - means we don't store anything between inter-episodes.
         # 2 - means we store intra-episode tree.
-        if(dataset is not None): # Dont need an datamanger if no file to manage.
-            self.dataset = dataset
-        else:
-            raise ValueError("Requires a datamanager to store the data..")
+        #if(dataset is not None): # Dont need an datamanger if no file to manage.
+        self.dataset = dataset
 
         #TODO: change policy to only use a network when needed.
 
@@ -162,6 +160,11 @@ class MCTS():
         if(start_player < 1 or start_player > 3):
             raise ValueError('Value of {} as P is not supported'.format(start_player))
 
+        if(epoch == 0): # Save network if we are starting from scratch.
+            #Start by saving the network as agent 0.
+            self.rollout_policy.store(epoch=0, optimizer=optimizer, loss=1000)#Max loss to begin with.
+            #pass
+
         # fill buffer using random rollout, since this is better than untrained network.
         size = self.dataset.get_buffer_size()
         # If size != 0, it means we don't train from scratch.
@@ -174,24 +177,19 @@ class MCTS():
             self.random_rollout = False
         elif(size != 0 and init_train and epoch == 0): # If buffer has data, and we want to pre train, and start from first epoch.
             # We want to train policy on data we have in buffer, atleast a little bit.
-            dataset_test = Datamanager("Data/data_r_test.csv",dim=5)
+            dataset_test = Datamanager("Data/data_r_test.csv",dim=5,modus=self.dataset.modus)
             print("Pretraining on {} with test {}".format(self.dataset.filepath, dataset_test.filepath))
             #exit()
             init_optimizer = torch.optim.RMSprop(self.rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             #init_optimizer = copy.copy(optimizer) # Don't want to change params on self training optimizer.
             init_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(init_optimizer, 'min')
-            for itt in range(1,200+1): # 10 itterations, batch 50
+            for itt in range(1,100+1): # 10 itterations, batch 50
                 loss_train,loss_test = network.train(self.rollout_policy,batch=50, iterations=10,
                 casemanager_train=self.dataset,casemanager_test=dataset_test, optimizer = init_optimizer,loss_function=loss_function,verbose=100)
                 init_scheduler.step(loss_test)  
                 print("pre_itteration {}  loss_train: {:.9f} loss_train: {:.9f} lr: {} ".format(itt, loss_train,loss_test, optimizer.param_groups[0]["lr"]))
             # Store network again.
-            #self.rollout_policy.store(epoch=-1, optimizer=init_optimizer, loss=loss_train)
-
-        if(epoch == 0): # Save network if we are starting from scratch.
-            #Start by saving the network as agent 0.
-            self.rollout_policy.store(epoch=1, optimizer=optimizer, loss=1000)#Max loss to begin with.
-            #pass
+            self.rollout_policy.store(epoch=-1, optimizer=optimizer, loss=loss_train) # Dont want to store this optimizer.
 
         if(variables.verbose > variables.play):
             print("Start training with self play using policy network")
@@ -212,7 +210,9 @@ class MCTS():
             # * Play game
             print("Using epsilon",epsilon, "training_count", training_count)
             sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims, epsilon=epsilon) # get last state of game. # Testing
-            
+            print(self.dataset)
+            print(self.dataset.buffer)
+            exit()
             # Check winner.
             if(game % training_frequency == 0): # We want to train between every game?
                 #We train.

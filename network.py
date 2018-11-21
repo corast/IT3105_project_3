@@ -51,8 +51,12 @@ def NETWORK_TEST():
 
 class Flatten(nn.Module):
     def forward(self, x):
-        #print(x.shape)
         return x.view(x.size()[0], -1)
+
+class Dims(nn.Module):
+    def forward(self, x):
+        print(x.shape, x)
+        return x
 
 class Model(nn.Sequential):
     def __init__(self, *args,name="Network", filepath=None, input_type=1):
@@ -223,6 +227,32 @@ def HEX_CNN_L2(name, dim, filepath=None):
         nn.Linear(50, 25),nn.ReLU(),
         nn.Softmax(dim=-1), name=name,input_type=2,filepath=filepath)
 
+def HEX_CNN_L3(name, dim, filepath=None): 
+    return Model(                                    # O = (5-3 +2) +1 = 5 
+        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
+        #Dims(),
+        nn.BatchNorm2d(3), # Removes small values.
+        nn.ReLU(),
+        #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
+        #Dims(),
+        Flatten(),
+        nn.Linear(75, 50),nn.ReLU(),
+        nn.Linear(50, 25),
+        nn.Softmax(dim=-1), name=name,input_type=2,filepath=filepath)
+
+def HEX_CNN_L4(name, dim, filepath=None): 
+    return Model(                                    # O = (5-3 +2) +1 = 5 
+        nn.Conv2d(3,5,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
+        #Dims(),
+        nn.BatchNorm2d(5), # Removes small values.
+        nn.ReLU(),
+        #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
+        #Dims(),
+        Flatten(),
+        nn.Linear(125, 50),nn.ReLU(),
+        nn.Linear(50, 25),
+        nn.Softmax(dim=-1), name=name,input_type=2,filepath=filepath)        
+
 def train_architecture_testing():
     #torch.manual_seed(999) # set seeds
     #np.random.seed(999)
@@ -230,7 +260,9 @@ def train_architecture_testing():
     dataset_train = Datamanager.Datamanager("Data/random_15000.csv",dim=5, modus=2)
     dataset_test = Datamanager.Datamanager("Data/random_20000.csv",dim=5, modus=2)
     #model = HEX_CNN(name="CNNET_TEST", dim=5)
-    model = HEX_CNN(name="CNN-SSE-ADAM", dim=5)
+    model = HEX_CNN_L4(name="CNN-SSE-L4", dim=5)
+    print(model)
+    #exit()
     model.apply(weights_init)
     #model = Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod")
     #model =  Model(nn.Conv1d(50,52,kernel_size=4,stride=1,padding=1),nn.ReLU(),nn.MaxPool1d(kernel_size=4, stride=2, padding=1), nn.Linear(50,25) ,nn.Softmax(dim=-1), name="rms_mod")
@@ -253,12 +285,9 @@ def train_architecture_testing():
     #loss_function = pyloss.SmoothL1Loss()
     #loss_function = pyloss.NLLLoss2d()
     #loss_function = pyloss.MultiLabelSoftMarginLoss()
-<<<<<<< HEAD
-    loss_function = CategoricalCrossEntropyLoss()
-=======
+    #loss_function = pyloss.BCEWithLogitsLoss()
     #loss_function = CategoricalCrossEntropyLoss()
     #loss_function = RootMeanSquareLoss()
->>>>>>> abcb8da31d35c0be596014d593a789a8c4b2fd27
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
     for itt in range(1000):
         loss_train,loss_test = train(model,batch=50, iterations=10,
@@ -266,6 +295,6 @@ def train_architecture_testing():
         #scheduler.step(loss_test)
         print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} lr:{}".format(itt, loss_train,loss_test ,optimizer.param_groups[0]["lr"]))
         #print(optimizer["lr"])
-    model.store(epoch=500, optimizer = optimizer, loss = loss_train)
+    model.store(epoch=1000, optimizer = optimizer, loss = loss_train)
 
 #train_architecture_testing()
