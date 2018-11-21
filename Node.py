@@ -10,7 +10,10 @@ import Datamanager
 import misc
 import network
 
-import torch
+try:
+    import torch
+except ImportError:
+    raise(ImportError("Cant import torch"))
 
 #TODO: Import policy to use with rollout.
 

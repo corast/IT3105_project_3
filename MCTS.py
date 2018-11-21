@@ -217,7 +217,8 @@ class MCTS():
             # Check winner.
             if(game % training_frequency == 0): # We want to train between every game?
                 #We train.
-                loss = network.train(self.rollout_policy,casemanager_train=self.dataset, optimizer=optimizer, loss_function=loss_function, iterations=iterations,batch=batch)
+                loss = network.train(self.rollout_policy,casemanager_train=self.dataset, optimizer=optimizer, 
+                loss_function=loss_function, iterations=iterations,batch=batch)
                 print("Epoch {} loss {:.8f} lr:{}".format(game, loss,optimizer.param_groups[0]["lr"]))
                 loss_history.append(loss) # Add current loss to history.
                 

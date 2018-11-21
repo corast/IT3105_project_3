@@ -89,6 +89,7 @@ def HEX_CNN_TWO(name, dim, filepath=None):
         nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
 # ? HEX-CNN-TWO: 
 
+# CNN-MAX , ADAM, SSE
 def HEX_CNN_POOL(name, dim, filepath=None): 
     input_dim = (dim*dim*2)+2
     target_dim = dim*dim 
@@ -196,14 +197,14 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/random_15000_4.csv",dim=args.dimentions,modus=2,limit=500)
+    datamanager = Datamanager("Data/data_cnn_non.csv",dim=args.dimentions,modus=2,limit=500)
     print(datamanager.filepath)
     
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = HEX_CNN_POOL("CNN-MAX",args.dimentions) # Use default values
+            rollout_policy = HEX_CNN("CNN-NON",args.dimentions) # Use default values
             print("Network", rollout_policy,"input-type",rollout_policy.input_type)
             rollout_policy.apply(network.weights_init) # init weights and biases.
             #TODO: handle continue training from file.
