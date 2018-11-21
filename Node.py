@@ -8,6 +8,7 @@ from base.State import *
 from base.Game import *
 import Datamanager
 import misc
+#import network
 from network_keras import Model
 
 #TODO: Import policy to use with rollout.
@@ -115,7 +116,7 @@ class Node():
     # ***** ROLLOUT FUNCTIONS
 
     
-    def rollout_policy_network(self, rollout_state,  anet:network_keras.Model, greedy): # TODO: high probability for random to begin with.
+    def rollout_policy_network(self, rollout_state,  anet:Model, greedy): # TODO: high probability for random to begin with.
         #TODO: Fix inputs...
         # We neede to get our state + PID as input.
         #PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)

@@ -142,11 +142,11 @@ if __name__=="__main__":
                 default=5, required=False)
     parser.add_argument("-tl","--time_limit", default = False, type=bool,
                                 required=False)
-    parser.add_argument("-k","--keras", type=check_bool, required=True, default=True)
+    parser.add_argument("-k","--keras", type=check_bool, required=True)
 
         # dest is where we store string we chose as action, to use later.
-    subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help"
-                    ,required=True)
+    subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help",required=True)
+
     parser_a = subparsers.add_parser("TRAIN")
     parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=5,
                     type=check_positive)
@@ -215,6 +215,7 @@ if __name__=="__main__":
                     time_limit=args.time_limit, rollout_policy=rollout_policy)
             else: 
                 import network_keras
+                from keras.optimizers import SGD,Adam,Adagrad,RMSprop
                 print("hello")
                 sgd = SGD(lr=0.01)
                 rmsprop = RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=0.0)
@@ -255,8 +256,8 @@ if __name__=="__main__":
             else:
                 print("Using random rollout only ----------- ")
             mcts.play_batch_with_training(optimizer=optimizer,epoch=epoch,
-            loss_function=loss_function,games=games,training_frequency=training_frequency, storage_frequency=storage_frequency, num_sims=args.num_sims,
-            iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games, init_train=init_train)
+            loss_function=loss_function,games=games,training_frequency=training_frequency, storage_frequency=storage_frequency, 
+            num_sims=args.num_sims, iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games, init_train=init_train)
         elif(args.sub_action == "TOPP"):
             # Load models from file and start tournament between them.
             topp_games = args.topp_games

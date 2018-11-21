@@ -56,7 +56,7 @@ class Model():
         print(score)
     
     def predict(self, input): #takse an pid + board state as input and return distribution.
-        
+        pass
 
 
 def load_model(filepath, weight_path,optimizer, loss, name, input_type=1):
@@ -100,7 +100,7 @@ def try_training():
     model_1.evaluate(datamanager, steps=100)
     model_1.store(epoch=0)
     
-try_training()
+#try_training()
 #model = load_model("models/CNN-50-25/CNN-50-25.json","models/CNN-50-25/CNN-50-25_0.h5",adam,"categorical_crossentropy","CNN-50-25",input_type=2)
 
 
