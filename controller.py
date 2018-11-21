@@ -101,15 +101,29 @@ def HEX_CNN_POOL(name, dim, filepath=None):
         nn.Linear(27, 25),
         nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
 
+def HEX_CNN_L2(name, dim, filepath=None): 
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim 
+    input_type = 2
+    return network.Model(                                    # O = (5-3 +2) +1 = 5 
+        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
+        nn.ReLU(),
+        network.Flatten(),
+        nn.Linear(75, 50),nn.ReLU(),
+        nn.Linear(50, 25),nn.ReLU(),
+        nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
+
 def CUSTON_NET(name, dim):
     input_dim = (dim*dim*2)+2
     target_dim = dim*dim
+    input_type = 1
     model = network.Model(network.Flatten(),
         nn.Linear(input_dim, 40),nn.ReLU(),
         nn.Linear(40,target_dim), nn.Softmax(dim=-1))
     return model
 
 def HEX_NET(name, dim):
+    input_type = 1
     input_dim = (dim*dim*2)+2
     target_dim = dim*dim
     model = network.Model(
@@ -196,16 +210,23 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/random_15000_4.csv",dim=args.dimentions,modus=2,limit=500)
+    datamanager = Datamanager("Data/data_HEX_CNN_RMSP.csv",dim=args.dimentions,modus=2,limit=500)
     print(datamanager.filepath)
     
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = HEX_CNN_POOL("CNN-MAX",args.dimentions) # Use default values
-            print("Network", rollout_policy,"input-type",rollout_policy.input_type)
+            rollout_policy = network.HEX_CNN("CNN-BUFFER",args.dimentions) # Use default values
             rollout_policy.apply(network.weights_init) # init weights and biases.
+            print("Network", rollout_policy,"input-type",rollout_policy.input_type)
+            optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
+            #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
+            #optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6)
+            #loss_function = nn.MultiLabelMarginLoss()
+            loss_function = pyloss.MSELoss(reduction='sum') # a bit better
+            #loss_function = pyloss.MSELoss()
+
             #TODO: handle continue training from file.
             mcts = MCTS(node=root, dataset=datamanager,
                 time_limit=args.time_limit, rollout_policy=rollout_policy)
@@ -225,11 +246,7 @@ if __name__=="__main__":
             init_sims = args.init_sims # default 5000
             init_train = args.init_train
             epoch = 0 # rollout_policy
-            #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
-            optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6)
-            #loss_function = nn.MultiLabelMarginLoss()
-            loss_function = pyloss.MSELoss(reduction='sum') # a bit better
-            #loss_function = pyloss.MSELoss()
+            
             # Load previous model from file if exists.
             if(rollout_policy is not None): # * Load from prev saved model if exists.
                 name = rollout_policy.name
@@ -246,7 +263,8 @@ if __name__=="__main__":
             iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games, init_train=init_train)
         elif(args.sub_action == "TOPP"):
             # Load models from file and start tournament between them.
-            """topp_games = args.topp_games
+            topp_games = args.topp_games
+            """
             model_path = args.model_path
             #Model path should be same name as path..
             model = HEX_CNN("E-HEX-CNN",5)
@@ -262,14 +280,14 @@ if __name__=="__main__":
                 #models.append()
             print(actors)
             """
-            model_1 = HEX_CNN_TWO(name="HEX-CNN-POOL-1", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_1")
-            model_20 = HEX_CNN_TWO(name="HEX-CNN-POOL-20", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_20")
-            model_50 = HEX_CNN_TWO(name="HEX-CNN-POOL-50", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_50")
-            model_80 = HEX_CNN_TWO(name="HEX-CNN-POOL-80", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_80")
-            model_120 = HEX_CNN_TWO(name="HEX-CNN-POOL-120", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_120")
-            models = [model_1,model_20,model_50,model_80,model_120]
+            model_1 = network.HEX_CNN(name="HEX_CNN-1", dim=args.dimentions, filepath="models/CNN-SSE-ADAM/CNN-SSE-ADAM_500")
+            model_2 = network.HEX_CNN_L2(name="HEX-CNN-L2", dim=args.dimentions, filepath="models/CNN-L2-ADAM/CNN-L2-ADAM_500")
+            #model_50 = network.HEX_CNN(name="HEX-CNN-POOL-50", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_50")
+            #model_80 = HEX_CNN_TWO(name="HEX-CNN-POOL-80", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_80")
+            #model_120 = HEX_CNN_TWO(name="HEX-CNN-POOL-120", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_120")
+            models = [model_1,model_2]
             #actors = [actor.Actor(model_1),actor.Actor(model_20),actor.Actor(model_50),actor.Actor(model_80),actor.Actor(model_120)]
-            actor.tournament(game,models)
+            actor.tournament(game,models,games=topp_games)
             #model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
             #Actor.tournament(game,games=100, 
             #models=[model1], random=True)
