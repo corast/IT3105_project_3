@@ -3,7 +3,7 @@
 from HEX import *
 import argparse
 import variables
-import Actor
+import actor
 #from variables import *
 from Node import *
 from MCTS import *
@@ -72,6 +72,33 @@ def HEX_CNN(name, dim,filepath=None): # Best so far..
         #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
         network.Flatten(),
         nn.Linear(75, 25),
+        nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
+
+# ? HEX-CNN-20: Rmsprop, SSE loss
+
+def HEX_CNN_TWO(name, dim, filepath=None): 
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim 
+    input_type = 2
+    return network.Model(                                    # O = (5-3 +2) +1 = 5 
+        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
+        nn.ReLU(),
+        nn.AvgPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
+        network.Flatten(),
+        nn.Linear(75, 25),
+        nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
+# ? HEX-CNN-TWO: 
+
+def HEX_CNN_POOL(name, dim, filepath=None): 
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim 
+    input_type = 2
+    return network.Model(                                    # O = (5-3 +2) +1 = 5 
+        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
+        nn.ReLU(),
+        nn.MaxPool2d(kernel_size=(2,2),padding=1,stride=2), # -> 1,3,5,5
+        network.Flatten(),
+        nn.Linear(27, 25),
         nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
 
 def CUSTON_NET(name, dim):
@@ -169,13 +196,14 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/cnnet_2.csv",dim=args.dimentions,modus=2)
+    datamanager = Datamanager("Data/random_15000_4.csv",dim=args.dimentions,modus=2,limit=500)
+    print(datamanager.filepath)
     
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = HEX_CNN("E-HEX-CNN",args.dimentions) # Use default values
+            rollout_policy = HEX_CNN_POOL("CNN-MAX",args.dimentions) # Use default values
             print("Network", rollout_policy,"input-type",rollout_policy.input_type)
             rollout_policy.apply(network.weights_init) # init weights and biases.
             #TODO: handle continue training from file.
@@ -197,7 +225,8 @@ if __name__=="__main__":
             init_sims = args.init_sims # default 5000
             init_train = args.init_train
             epoch = 0 # rollout_policy
-            optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
+            #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
+            optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6)
             #loss_function = nn.MultiLabelMarginLoss()
             loss_function = pyloss.MSELoss(reduction='sum') # a bit better
             #loss_function = pyloss.MSELoss()
@@ -217,7 +246,7 @@ if __name__=="__main__":
             iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games, init_train=init_train)
         elif(args.sub_action == "TOPP"):
             # Load models from file and start tournament between them.
-            topp_games = args.topp_games
+            """topp_games = args.topp_games
             model_path = args.model_path
             #Model path should be same name as path..
             model = HEX_CNN("E-HEX-CNN",5)
@@ -232,7 +261,15 @@ if __name__=="__main__":
                 actors.append(Actor.Actor(HEX_CNN(name=name,dim=5,filepath=path)))
                 #models.append()
             print(actors)
-
+            """
+            model_1 = HEX_CNN_TWO(name="HEX-CNN-POOL-1", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_1")
+            model_20 = HEX_CNN_TWO(name="HEX-CNN-POOL-20", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_20")
+            model_50 = HEX_CNN_TWO(name="HEX-CNN-POOL-50", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_50")
+            model_80 = HEX_CNN_TWO(name="HEX-CNN-POOL-80", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_80")
+            model_120 = HEX_CNN_TWO(name="HEX-CNN-POOL-120", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_120")
+            models = [model_1,model_20,model_50,model_80,model_120]
+            #actors = [actor.Actor(model_1),actor.Actor(model_20),actor.Actor(model_50),actor.Actor(model_80),actor.Actor(model_120)]
+            actor.tournament(game,models)
             #model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
             #Actor.tournament(game,games=100, 
             #models=[model1], random=True)

@@ -76,7 +76,7 @@ class Node():
         #return self.children[np.argmin(choices)] # else we want to minimize winning (i.e. we are not rewarded from winning)    
 
     def get_best_child(self, c=0, data=False): # What we use to 
-        # TODO: Handle fewer simmulations that children.
+        # TODO: Handle fewer simmulations than children.
 
         choices = [self.get_score(child, c) for child in self.children] # Get score from each child node.
         if(data): # * If we want to return important information about the child states values, for creating a training case.
@@ -161,13 +161,13 @@ class Node():
         choice = np.random.choice(len(actions)) #randomly choice one of the indexes
         return actions[choice] #return choice, from our action list based on index
     
-    def rollout(self, root_player, anet=None, greedy=True,epsilon=1): # How we traverse the rest of the tree to terminal
+    def rollout(self, root_player, anet=None, greedy=True, epsilon=None): # How we traverse the rest of the tree to terminal
         rollout_state = copy.deepcopy(self.game) # copy game state, since we don't want to keep states from this point onward.
         game_finished = self.is_termal_node()
         while not game_finished: # 
-            #print("epsilon",epsilon)
-            #print("possible moves", possible_moves, rollout_state.state.num_pieces)
             if(anet is not None and epsilon <= np.random.rand(1)):# Epsilon 1 -> random only, epsilon 0.2 , 80% chance we use network
+                if(0.5 <= np.random.rand(1) and epsilon == 0): # 50 % chance of using stochastic weightening.
+                    greedy = False
                 action = self.rollout_policy_network(rollout_state, anet, greedy=greedy)
             else: #we want to use this rollout_policy instead, assume it is an network.
                 possible_moves = rollout_state.get_actions() # Return legal actions.

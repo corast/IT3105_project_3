@@ -61,7 +61,7 @@ class Datamanager():
         
         self.buffer.extend([data]) # hopefully, we can add an extra row with out problems.
         if(len(self.buffer) > self.limit + 1):
-            amount = len(self.buffer) - self.limit + 1
+            amount = len(self.buffer) - self.limit
             self.buffer = self.buffer[amount:] # Only keep limit
 
 
