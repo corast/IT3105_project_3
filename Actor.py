@@ -2,11 +2,11 @@
 # We want to be able to play as a human (command prompt), an Good AI vs an Bad AI.
 # External AI (Interface), etc.
 
-import network
+#import network
 import numpy as np
 import misc
-import torch
-import torch.nn as nn
+#import torch
+#import torch.nn as nn
 import HEX
 from itertools import permutations 
 import copy
@@ -14,14 +14,14 @@ import variables
 
 #TODO Names
 class Actor():
-    def __init__(self, model:network.Model=None, filepath=None, name="random"):
+    def __init__(self, model=None, filepath=None, name="random"):
             #Assumes an model is already preinstanciated with weights.
         self.model = model
         if(model is None): # * Random actor.    
             self.name = name
         else:
             self.name = model.name
-            if(not filepath is None): # Load weights from file, otherwise 
+            if(not filepath is None): # Load weights from file 
                 model.load_model(filepath)
             #else: # Randomly init weights for untrained network.
             #    model.apply(network.weights_init)

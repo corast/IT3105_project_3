@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 # Misc functions
 def int_to_one_hot_vector(value, size, off_val=0, on_val=1):
@@ -142,6 +141,7 @@ def one_hot_array(board): # turn [1,2,1] -> [1,0,0,1,1,0]
 
 # Data translations, to handle different network inputs.
 def get_cnn_input(data_pid, data_inputs, dim): # This can be a list of lists.
+    import torch
     PID = np.array([np.full((dim,dim),(2-pid)) for pid in data_pid]) # Player 2 = 0, Player 1 = 1
     inputs = np.array([get_player_states(board,dim,ravel=False) for board in data_inputs])
     PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1],PID.shape[2]))
@@ -149,6 +149,7 @@ def get_cnn_input(data_pid, data_inputs, dim): # This can be a list of lists.
     return torch.from_numpy(inputs).float() # * (B x 3 x 5 x 5) for CNN2d
 
 def get_normal_input(data_pid,data_inputs): # Don't need to know board dimentions.
+    import torch
     # inputs:  PID + board_state
     PID =  np.array([int_to_binary_rev(pid) for pid in data_pid])
     inputs = np.array([one_hot_array(board) for board in data_inputs])

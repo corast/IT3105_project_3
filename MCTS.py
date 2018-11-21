@@ -5,10 +5,12 @@ import variables
 #from variables import *
 import copy
 import time
+from network_keras import Model
+#import network_keras
 
 
 class MCTS():
-    def __init__(self, node:Node, dataset:Datamanager=None, rollout_policy=None, random_rollout=False, greedy=False, time_limit = False, gather_data=False):
+    def __init__(self, node:Node, dataset:Datamanager=None, rollout_policy:Model=None, random_rollout=False, greedy=False, time_limit = False, gather_data=False):
         self.root = node # Set root node of MCTS
             #TODO: use memory states, intra episode or not
         #self.memory_state = memory_state # How whether or not we want to keep memory in simulation.
@@ -184,6 +186,7 @@ class MCTS():
             #init_optimizer = copy.copy(optimizer) # Don't want to change params on self training optimizer.
             init_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(init_optimizer, 'min')
             for itt in range(1,100+1): # 10 itterations, batch 50
+                self.rollout_policy.train(casemanager_train=self.dataset)
                 loss_train,loss_test = network.train(self.rollout_policy,batch=50, iterations=10,
                 casemanager_train=self.dataset,casemanager_test=dataset_test, optimizer = init_optimizer,loss_function=loss_function,verbose=100)
                 init_scheduler.step(loss_test)  
@@ -210,14 +213,10 @@ class MCTS():
             # * Play game
             print("Using epsilon",epsilon, "training_count", training_count)
             sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims, epsilon=epsilon) # get last state of game. # Testing
-            print(self.dataset)
-            print(self.dataset.buffer)
-            exit()
             # Check winner.
             if(game % training_frequency == 0): # We want to train between every game?
                 #We train.
-                loss = network.train(self.rollout_policy,casemanager_train=self.dataset, optimizer=optimizer, 
-                loss_function=loss_function, iterations=iterations,batch=batch)
+                loss = self.rollout_policy.train(casemanager_train=self.dataset, epochs=iterations,batch_size=batch)
                 print("Epoch {} loss {:.8f} lr:{}".format(game, loss,optimizer.param_groups[0]["lr"]))
                 loss_history.append(loss) # Add current loss to history.
                 
@@ -225,8 +224,7 @@ class MCTS():
                 # collect the last x losses from history.
                 training_count += 1 # update training count
                 epsilon = max(0,0.525-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
-                if(epsilon <= 0): # Don't want to decrease learning rate until we remove random rollout.
-                    scheduler.step(loss) # If loss stagnates over 10 games, we need to decrease it.
+
                 # Check if we want to store this trained policy network. 
                 if(training_count % storage_frequency == 0 or game == games+epoch): # store every x training times, or at last itteration.
                     # Decrease epsilon value.
@@ -234,7 +232,7 @@ class MCTS():
                     
                     #epsilon = epsilon/(training_count+1) # 
                     print("Storing network...")
-                    self.rollout_policy.store(epoch=training_count, optimizer = optimizer, loss = loss, datapath=self.dataset.filepath)
+                    self.rollout_policy.store(epoch=training_count)
                     # We need to save our epoch. networkName_0, networkName_1, networkName_2, etc.
 
 """ 

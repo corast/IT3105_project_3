@@ -139,8 +139,33 @@ class Datamanager():
 
         return t_inputs, t_targets
 
-    def return_keras(self):
-        pass
+    def return_keras(self, modus):
+        data = self.buffer
+        tot_size = len(data)
+        if(tot_size == 0):
+            raise ValueError("No cases availible in file {}".format(self.filepath))
+        data_pid = []
+        data_inputs = []
+        data_targets = []
+        for i, row in enumerate(data):
+            data_pid.append(int(row[0])) 
+            input = list(map(int,row[1:(self.dim*self.dim)+1])) # 1-> 25 should be board
+            target = list(map(float,row[(self.dim*self.dim)+1:]))
+            data_inputs.append(input)
+            data_targets.append(target)
+        # return as numpy. arrays
+        if(modus == 1):# * (B x 52)
+            PID =  np.array([misc.int_to_binary_rev(pid) for pid in data_pid])
+            inputs = np.array([misc.one_hot_array(board) for board in data_inputs])
+            inputs = np.append(PID, inputs, axis=1)
+        elif(modus == 2): # * (B x 3x5x5)
+            PID = np.array([np.full((self.dim,self.dim),(2-pid)) for pid in data_pid]) # Player 2 = 0, Player 1 = 1
+            inputs = np.array([misc.get_player_states(board,self.dim,ravel=False) for board in data_inputs])
+            PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1],PID.shape[2]))
+            inputs = np.concatenate((inputs,PID),axis=1)
+        else:
+            raise ValueError("Modus not supporter", modus)
+        return inputs, np.array(data_targets)
 
     def return_batch_keras(self, batch_size):
         data = self.buffer
@@ -173,7 +198,7 @@ class Datamanager():
         """ return number of rows in csv file"""
         data = self.read_csv()
         return len(data)
-        
+
     def normal(self,data_pid,data_inputs,dim):
         import torch
         # inputs:  PID + board_state

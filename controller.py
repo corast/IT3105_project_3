@@ -118,34 +118,6 @@ def HEX_CNN_L2(name, dim, filepath=None):
         nn.Linear(50, 25),nn.ReLU(),
         nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
 
-def CUSTON_NET(name, dim):
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim
-    input_type = 1
-    model = network.Model(network.Flatten(),
-        nn.Linear(input_dim, 40),nn.ReLU(),
-        nn.Linear(40,target_dim), nn.Softmax(dim=-1))
-    return model
-
-def HEX_NET(name, dim):
-    input_type = 1
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim
-    model = network.Model(
-        nn.Linear(input_dim, 70), nn.ReLU(),
-        nn.Linear(70,50), nn.ReLU(), 
-        nn.Linear(50,target_dim), nn.Softmax(dim=-1), name=name)
-    return model
-
-def HEX_NET_2(name):
-    input_dim = (args.dimentions*args.dimentions*2)+2
-    target_dim = args.dimentions*args.dimentions
-    model = network.Model(
-        nn.Linear(input_dim, 50), nn.ReLU(),
-        #nn.Linear(100,50), nn.ReLU(), 
-        nn.Linear(50,target_dim), nn.Softmax(dim=-1), name=name)
-    return model
-
 FUNCTION_MAP = {'NIM' : "play_nim",
                 'HEX' : play_hex}
 
@@ -170,7 +142,7 @@ if __name__=="__main__":
                 default=5, required=False)
     parser.add_argument("-tl","--time_limit", default = False, type=bool,
                                 required=False)
-    parser.add_argument("-k","--keras", type=check_bool, required=True, default=False)
+    parser.add_argument("-k","--keras", type=check_bool, required=True, default=True)
 
         # dest is where we store string we chose as action, to use later.
     subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help"
@@ -241,11 +213,13 @@ if __name__=="__main__":
                 #TODO: handle continue training from file.
                 mcts = MCTS(node=root,
                     time_limit=args.time_limit, rollout_policy=rollout_policy)
-            else:
-                import keras 
+            else: 
                 import network_keras
-                optimizer = 
-
+                print("hello")
+                sgd = SGD(lr=0.01)
+                rmsprop = RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=0.0)
+                adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+                adagrad = Adagrad(lr=0.01, epsilon=None, decay=0.0)
                 pass
         else:
             mcts = MCTS(node=root, 
