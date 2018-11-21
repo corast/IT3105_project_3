@@ -196,7 +196,7 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/cnn_max_1.csv",dim=args.dimentions,modus=2,limit=500)
+    datamanager = Datamanager("Data/random_15000_4.csv",dim=args.dimentions,modus=2,limit=500)
     print(datamanager.filepath)
     
     if(game is not None):
