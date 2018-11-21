@@ -225,7 +225,7 @@ def train_architecture_testing():
     #print(model)
     #exit()
     # Create a model to train on.
-    optimizer = optim.Adam(model.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6,) # 0.14, 0.18, 2: 0.10 ,0.133
+    optimizer = optim.Adam(model.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6) # 0.14, 0.18, 2: 0.10 ,0.133
     #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 4 ...
     #optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test
     #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0) # 0.40 (0.45 train) 0.65 test

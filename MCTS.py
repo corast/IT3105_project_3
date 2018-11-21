@@ -56,12 +56,12 @@ class MCTS():
                 leaf = self.tree_policy(node, root_player) # Return leaf node we are going to use for rollout from node state.
                 if(self.rollout_policy is None): # Check if we only want the data.
                     winner = leaf.rollout(root_player)
+                    
                 else: # We want to use another policy for rollout.
                     #TODO: pass the policy to the rollout function.
-                    winner = leaf.rollout(root_player, self.rollout_policy, greedy=self.greedy,epsilon=epsilon) # Rollout from this node, and get the reward from this stage. 
+                    winner = leaf.rollout(root_player, self.rollout_policy, greedy=self.greedy, epsilon=epsilon) # Rollout from this node, and get the reward from this stage. 
                 #print("leaf", leaf, leaf.game)
                 # Victor is the node in the whole simulated tree that is considered best.
-                winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
                 # TODO: send network with backpropogate function.
 
                 leaf.backpropagate(winner, root_player) # Go from leaf node and update the values
@@ -75,10 +75,9 @@ class MCTS():
                     winner = leaf.rollout(root_player)
                 else: # We want to use another policy for rollout.
                     #TODO: pass the policy to the rollout function.
-                    winner = leaf.rollout(root_player, self.rollout_policy) # Rollout from this node, and get the reward from this stage. 
+                    winner = leaf.rollout(root_player, self.rollout_policy, epsilon=epsilon) # Rollout from this node, and get the reward from this stage. 
                 #print("leaf", leaf, leaf.game)
                 # Victor is the node in the whole simulated tree that is considered best.
-                winner = leaf.rollout(root_player) # Rollout from this node, and get the reward from this stage. 
                 # TODO: send network with backpropogate function.
 
                 leaf.backpropagate(winner, root_player) # Go from leaf node and update the values
@@ -201,7 +200,6 @@ class MCTS():
         loss_history = [] # Store previous losses
         #scheduler = torch.optim.lr_scheduler(optimizer,step_size = 30, )
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
-        epsilon = 0.95 # Start at 0.95 % probability random.
         #97,5 90, 80, 60
         #1/version 
         epsilon = 1
@@ -214,7 +212,7 @@ class MCTS():
             sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
             # * Play game
             print("Using epsilon",epsilon, "training_count", training_count)
-            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims, epsilon=epsilon) # get last state of game.
+            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims, epsilon=epsilon) # get last state of game. # Testing
             
             # Check winner.
             if(game % training_frequency == 0): # We want to train between every game?
@@ -222,11 +220,13 @@ class MCTS():
                 loss = network.train(self.rollout_policy,casemanager_train=self.dataset, optimizer=optimizer, loss_function=loss_function, iterations=iterations,batch=batch)
                 print("Epoch {} loss {:.8f} lr:{}".format(game, loss,optimizer.param_groups[0]["lr"]))
                 loss_history.append(loss) # Add current loss to history.
-                scheduler.step(loss)
+                
                 #print(optimizer.param_groups[0]["lr"])
                 # collect the last x losses from history.
                 training_count += 1 # update training count
                 epsilon = max(0,1-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
+                if(epsilon <= 0): # Don't want to decrease learning rate until we remove random rollout.
+                    scheduler.step(loss) # If loss stagnates over 10 games, we need to decrease it.
                 # Check if we want to store this trained policy network. 
                 if(training_count % storage_frequency == 0 or game == games+epoch): # store every x training times, or at last itteration.
                     # Decrease epsilon value.

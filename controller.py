@@ -74,6 +74,21 @@ def HEX_CNN(name, dim,filepath=None): # Best so far..
         nn.Linear(75, 25),
         nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
 
+# ? HEX-CNN-20: Rmsprop, SSE loss
+
+def HEX_CNN_TWO(name, dim, filepath=None): # Best so far..
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim 
+    input_type = 2
+    return network.Model(                                    # O = (5-3 +2) +1 = 5 
+        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
+        nn.ReLU(),
+        nn.AvgPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
+        network.Flatten(),
+        nn.Linear(75, 25),
+        nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
+# ? HEX-CNN-TWO: 
+
 def CUSTON_NET(name, dim):
     input_dim = (dim*dim*2)+2
     target_dim = dim*dim
@@ -169,13 +184,14 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/cnnet_2.csv",dim=args.dimentions,modus=2)
+    datamanager = Datamanager("Data/data_hex_cnn_pool.csv",dim=args.dimentions,modus=2,limit=500)
+    print(datamanager.filepath)
     
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = HEX_CNN("E-HEX-CNN",args.dimentions) # Use default values
+            rollout_policy = HEX_CNN_TWO("HEX-CNN-POOL",args.dimentions) # Use default values
             print("Network", rollout_policy,"input-type",rollout_policy.input_type)
             rollout_policy.apply(network.weights_init) # init weights and biases.
             #TODO: handle continue training from file.
@@ -197,7 +213,8 @@ if __name__=="__main__":
             init_sims = args.init_sims # default 5000
             init_train = args.init_train
             epoch = 0 # rollout_policy
-            optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
+            #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
+            optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6)
             #loss_function = nn.MultiLabelMarginLoss()
             loss_function = pyloss.MSELoss(reduction='sum') # a bit better
             #loss_function = pyloss.MSELoss()
