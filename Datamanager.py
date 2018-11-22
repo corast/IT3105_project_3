@@ -18,13 +18,10 @@ import misc
 #import pandas
 
 class Datamanager():
-    def __init__(self, filepath, dim=5, modus=1, limit=500):
+    def __init__(self, filepath, dim=5, limit=500):
         self.filepath = filepath
         self.limit = limit
         self.dim = dim # dim of game we use
-        if(modus not in [1,2,3]):
-            raise ValueError("Incorrect modus selected ", modus, "must be 1,2 or 3")
-        self.modus = modus # 3 moduses, "normal", "cnn", "flat_cnn"
         if(not os.path.isfile(filepath)):  # * Create filepath, if it doest exist already.
             with open (filepath,"a") as file:
                 pass
@@ -164,7 +161,7 @@ class Datamanager():
             PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1],PID.shape[2]))
             inputs = np.concatenate((inputs,PID),axis=1)
         elif(modus == 3): # * (B x 26)
-            PID = np.array([misc.reverse_2(pid) for pid in data_pid])
+            PID = np.array([misc.reverse_2([pid]) for pid in data_pid])
             inputs = np.array([misc.reverse_2(board) for board in data_inputs])
             inputs = np.append(PID, inputs, axis=1) 
         else:

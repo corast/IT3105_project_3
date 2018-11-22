@@ -244,7 +244,7 @@ if __name__=="__main__":
         #mcts.simulate_best_action(root,10)
         if(args.sub_action == "TRAIN"): # We want to train against ourself.
             
-            datamanager = Datamanager("Data/buffer_K_NN_50.csv",dim=args.dimentions,modus=2,limit=500)
+            datamanager = Datamanager("Data/buffer_K_NN_50.csv",dim=args.dimentions,limit=500)
             print(datamanager.filepath)
             mcts.dataset = datamanager
 
@@ -264,7 +264,6 @@ if __name__=="__main__":
             if(rollout_policy is not None): # * Load from prev saved model if exists.
                 name = rollout_policy.name
                 path, epoch = misc.find_newest_model_keras(name)
-                print(path)
                 if(path is not None): # TODO: make sure optimizer is the same, otherwise error here.
                     # Load model from path.
                     rollout_policy.load(path)

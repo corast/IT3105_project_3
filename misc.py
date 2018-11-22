@@ -109,9 +109,8 @@ def find_newest_model_keras(name):
     import os
     # Find every file in directory of models with same name
     result = glob.glob("models/"+name+"/"+name+"*"+".h5")
-
-    if(len(result) == 0):
-        return None
+    if(len(result) == 0) or result is None:
+        return None,0 # path, epoch
     result_2 =[x.split("_") for x in result]
 
     result_3 = max(result_2,key=lambda x:int(x[1].partition(".")[0]))
@@ -192,8 +191,8 @@ def get_network_input(data_pid,data_inputs,dim,modus):
         PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1],PID.shape[2]))
         inputs = np.concatenate((inputs,PID),axis=1)
     elif(modus == 3): # * (B x 26)
-        PID = np.array([misc.reverse_2(pid) for pid in data_pid])
-        inputs = np.array([misc.reverse_2(board) for board in data_inputs])
+        PID = np.array([reverse_2([pid]) for pid in data_pid])
+        inputs = np.array([reverse_2(board) for board in data_inputs])
         inputs = np.append(PID, inputs, axis=1)
     return inputs#, np.array(data_targets)
 
