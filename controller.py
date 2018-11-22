@@ -212,19 +212,21 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/buffer_HEX_CNN_2.csv",dim=args.dimentions,limit=500)
+    datamanager = Datamanager("Data/buffer_HEX_CNN_4.csv",dim=args.dimentions,limit=500)
     print(datamanager.filepath)
     # ! HEX-CNN buffer_HEX_CNN
     # ! HEX-CNN-L2 buffer_HEX_CNN-L2
 
-    # ! HEX-CNN buffer_HEX_CNN
-    # ! HEX-CNN-2 buffer_HEX_CNN_2
+    # ! HEX-CNN buffer_HEX_CNN  3k sim
+    # ! HEX-CNN-2 buffer_HEX_CNN_2 4k sim# pre-loaded
+    # ! HEX-CNN-3 buffer_HEX_CNN_3 4k sim# pre-loaded + many itterations training.
+    # ! HEX-CNN-4 buffer_HEX_CNN_4 # pre-loaded + only greedy after epsilon.
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
             
-            rollout_policy = network.HEX_CNN("HEX-CNN-2",args.dimentions) # Use default values
+            rollout_policy = network.HEX_CNN("HEX-CNN-4",args.dimentions) # Use default values
             #rollout_policy = network.HEX_CNN_L2("NN-50",args.dimentions) # Use default values
             #rollout_policy = network.NN_25("NN-50",args.dimentions) # Use default values
             #rollout_policy = network.NN_50("NN-50",args.dimentions) # Use default values

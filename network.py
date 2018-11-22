@@ -11,7 +11,7 @@ from  torch.nn.modules.loss import _Loss
 
 import os
 import numpy as np
-from IPython.core.debugger import set_trace
+#from IPython.core.debugger import set_trace
 import time
 import Datamanager
 
@@ -156,7 +156,7 @@ def train(model, casemanager_train:Datamanager, optimizer,
             #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
             loss_train_i = train_batch(casemanager_train, 
             model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
-            loss_test_i = evaluate_test(casemanager_test, batch_size=batch*2,
+            loss_test_i = evaluate_test(casemanager_test, batch_size=batch*3,
             model=model, loss_function=loss_function)
             if(t % verbose == 0 or t == iterations + 1):
                 print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train_i, loss_test_i))
