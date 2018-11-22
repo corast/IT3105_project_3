@@ -145,6 +145,12 @@ if __name__=="__main__":
     # ! NN-25-20-PB buffer_nn-25-PB-RMSP -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 RMSP Nongreed
     # ! NN-25-20-PB-G buffer_nn-25-PB-RMSP-G -s 5000 (-100 pr storage), eps = 0.5, 20 its, batch 30 RMSP greed 750 buffer
     # ! NN-25-4-PG-G buffer_NN-25-4-PG-G-RMSP -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 30 RMSP greed 750 buffer
+
+    
+    # ! HEX-CNN buffer_HEX_CNN  3k sim
+    # ! HEX-CNN-2 buffer_HEX_CNN_2 4k sim# pre-loaded
+    # ! HEX-CNN-3 buffer_HEX_CNN_3 4k sim# pre-loaded + many itterations training.
+    # ! HEX-CNN-4 buffer_HEX_CNN_4 # pre-loaded + only greedy after epsilon.
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
