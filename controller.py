@@ -171,9 +171,9 @@ if __name__=="__main__":
     subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help"
                     ,required=True)
     parser_a = subparsers.add_parser("TRAIN")
-    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=10,
+    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=4,
                     type=check_positive)
-    parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=50,
+    parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=32,
                     type=check_positive)
     parser_a.add_argument("-sf","--storage_frequency",help="how often we store a mode, w.r.t. training", default=10,
                     type=check_positive)
@@ -211,28 +211,20 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-<<<<<<< HEAD
-    datamanager = Datamanager("Data/data_cnn_non.csv",dim=args.dimentions,modus=2,limit=500)
-=======
-    datamanager = Datamanager("Data/data_HEX_CNN_RMSP.csv",dim=args.dimentions,modus=2,limit=500)
->>>>>>> abcb8da31d35c0be596014d593a789a8c4b2fd27
+    datamanager = Datamanager("Data/hex_3.csv",dim=args.dimentions,modus=2,limit=5000)
     print(datamanager.filepath)
-    
+    # ! HEX-CNN buffer_HEX_CNN
+    # ! HEX-CNN-L2 buffer_HEX_CNN-L2
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-<<<<<<< HEAD
-            rollout_policy = HEX_CNN("CNN-NON",args.dimentions) # Use default values
-            print("Network", rollout_policy,"input-type",rollout_policy.input_type)
-=======
-            rollout_policy = network.HEX_CNN("CNN-BUFFER",args.dimentions) # Use default values
->>>>>>> abcb8da31d35c0be596014d593a789a8c4b2fd27
+            rollout_policy = network.HEX_CNN("HEX-CNN-L2",args.dimentions) # Use default values
             rollout_policy.apply(network.weights_init) # init weights and biases.
             print("Network", rollout_policy,"input-type",rollout_policy.input_type)
-            optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
-            #optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6)
+            #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
+            optimizer = optim.Adam(rollout_policy.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6)
             #loss_function = nn.MultiLabelMarginLoss()
             loss_function = pyloss.MSELoss(reduction='sum') # a bit better
             #loss_function = pyloss.MSELoss()
@@ -256,16 +248,12 @@ if __name__=="__main__":
             init_sims = args.init_sims # default 5000
             init_train = args.init_train
             epoch = 0 # rollout_policy
-<<<<<<< HEAD
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6)
             #loss_function = nn.MultiLabelMarginLoss()
             #loss_function = pyloss.MSELoss(reduction='sum') # a bit better
             loss_function = network.CategoricalCrossEntropyLoss()
             #loss_function = pyloss.MSELoss()
-=======
-            
->>>>>>> abcb8da31d35c0be596014d593a789a8c4b2fd27
             # Load previous model from file if exists.
             if(rollout_policy is not None): # * Load from prev saved model if exists.
                 name = rollout_policy.name

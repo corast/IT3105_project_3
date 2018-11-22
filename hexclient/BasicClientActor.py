@@ -32,9 +32,9 @@ class BasicClientActor(BasicClientActorAbs):
 
         #state_board = misc.int_board_to_network_board(state_board) # Return [1,0,0] to [1,0,0,0,0,0]
         if(state[0] == 1): # Black is player 1 in my game, need to switch.
-            PID = [2] # Player 1 in tourn is red, player 1 in my game is black.
+            PID = [1] # Player 1 in tourn is red, player 1 in my game is black.
         else:
-            PID = [1]
+            PID = [2]
         #state_board.extend(PID) # Add player id to network.
         #PID = misc.int_to_binary_rev(state[0])
 
@@ -163,13 +163,12 @@ if __name__ ==  '__main__':
     #model = network.Model(insize = 52, outsize = 25, name="network")
     #model = controller.HEX_NET("hexnet",dim=5)
     # input_type cnn = 2(B,3,5,5), normal = 1(B,52)
-    model = network.HEX_CNN(name="CNN-SSE-ADAM",dim=5,filepath="../models/CNN-SSE-ADAM/CNN-SSE-ADAM_500")
+    model = network.HEX_CNN(name="HEX-CNN",dim=5,filepath="../models/HEX-CNN/HEX-CNN_130")
     #model = network.HEX_CNN(name="CNN-SSE-ADAM",dim=5,filepath="../models/CNN-SSE-ADAM_500")
     #model = network.HEX_CNN_L2(name="CNN-L2-SSE-ADAM", dim=5, filepath="../models/CNN-L2-SSE-ADAM_500")
     #model = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod")
     #model = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,60), nn.ReLU(), nn.Linear(60,25), nn.Softmax(dim=-1), name="rms_mod",filepath="../models/rms_mod_10000")
     ANET = Actor(model = model)
-    exit()
     bsa = BasicClientActor(verbose=True)
     bsa.connect_to_server()
 

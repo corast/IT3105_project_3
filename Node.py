@@ -91,11 +91,16 @@ class Node():
                 action = child.action # Should be a touple for HEX.
                 visits = child.num_visits # What we want to store.
                 data_visits[action[0]*dimention[0]+action[1]] = visits
+                
+            print(data_visits)
             player = [self.game.get_current_player()]
+            print(player)
             #PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
             data_input = self.game.get_state_as_input()
+            print(data_input)
             #data_input.extend(0,PID)
             data_target = misc.normalize_array(data_visits)  
+            print(data_target)
             #  One row of data : [player_id, row1, row2, row3,...]
             #print(type(player), type(data_input), player, data_input)
             return self.children[np.argmax(choices)], player + data_input + data_target # * Return data per move.

@@ -253,12 +253,8 @@ def train_architecture_testing():
     #loss_function = pyloss.SmoothL1Loss()
     #loss_function = pyloss.NLLLoss2d()
     #loss_function = pyloss.MultiLabelSoftMarginLoss()
-<<<<<<< HEAD
-    loss_function = CategoricalCrossEntropyLoss()
-=======
     #loss_function = CategoricalCrossEntropyLoss()
     #loss_function = RootMeanSquareLoss()
->>>>>>> abcb8da31d35c0be596014d593a789a8c4b2fd27
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
     for itt in range(1000):
         loss_train,loss_test = train(model,batch=50, iterations=10,
