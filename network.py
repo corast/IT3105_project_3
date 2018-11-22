@@ -156,7 +156,7 @@ def train(model, casemanager_train:Datamanager, optimizer,
             #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
             loss_train_i = train_batch(casemanager_train, 
             model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
-            loss_test_i = evaluate_test(casemanager_test, 
+            loss_test_i = evaluate_test(casemanager_test, batch_size=batch*2,
             model=model, loss_function=loss_function)
             if(t % verbose == 0 or t == iterations + 1):
                 print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} ".format(t,loss_train_i, loss_test_i))
@@ -182,10 +182,11 @@ def train_batch(casemanager:Datamanager, model, optimizer, loss_function, batch)
     optimizer.step()
     return loss.item()
 
-def evaluate_test(casemanager:Datamanager, model, loss_function):
+def evaluate_test(casemanager:Datamanager, model, loss_function, batch_size):
+    # batch_size = "all" is everything 
     model.eval() # Change behaviour of some layers, like no dropout etc.
     with torch.no_grad(): # Turn off gradient calculation requirements, faster.
-        data,target = casemanager.return_batch("all",model.input_type)
+        data,target = casemanager.return_batch(batch_size,model.input_type)
         prediction = model(data)
         return loss_function(prediction,target).item() # Get loss value.
 
@@ -271,7 +272,7 @@ def NN_CUSTOM(name, dim,input_type=1): # filepath if we want to load prev models
         input_type=3
     )
 
-
+# ! CNN-20000-3 is the bot which played in the tournament.
 
 def train_architecture_testing():
     #torch.manual_seed(999) # set seeds
@@ -289,7 +290,7 @@ def train_architecture_testing():
     # Dimentions: 52 -> 100, maxpol: 100 -> 
     #print(model)
     #exit()
-    # Create a model to train on. SGD>Adagrad>Adadelta>RMSprop>Adam
+    # Create a model to train on. SGD<Adagrad<Adadelta<RMSprop<Adam<Adam+amsgrad
     optimizer = optim.Adam(model.parameters(), lr=0.0025,betas=(0.9,0.999),eps=1e-6,amsgrad=True,weight_decay=0.0075) # 0.14, 0.18, 2: 0.10 ,0.133
     #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 4 ...
     #optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test

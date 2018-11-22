@@ -33,8 +33,10 @@ class Actor():
             # Board state should be in the format PID + board_states 26 array.
             if(self.input_type == 1):
                 board_input = misc.get_normal_input(pid,board_state)
-            else:
+            elif(self.input_type == 2):
                 board_input = misc.get_cnn_input(pid,[board_state],dim)
+            elif(self.input_type == 3):
+                board_input = misc.get_normal_2(pid, board_state)
             if(type(board_input) == list):
                 #print("LIST IN GET_ACTION")
                 board_input = torch.FloatTensor(board_state)

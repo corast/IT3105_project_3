@@ -195,9 +195,9 @@ class MCTS():
 
         if(variables.verbose > variables.play):
             print("Start training with self play using policy network")
-
+        datamanager_test = Datamanager("Data/random_20000.csv") # Expert knowledge.
         training_count = epoch # Count number of times we have trained, to easily check if needing to store.
-        loss_history = [] # Store previous losses
+        #loss_history = [] # Store previous losses
         #scheduler = torch.optim.lr_scheduler(optimizer,step_size = 30, )
         #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.05) # decrease by a bit
         #97,5 90, 80, 60
@@ -222,8 +222,11 @@ class MCTS():
                 #We train.
                 loss = network.train(self.rollout_policy,casemanager_train=self.dataset, optimizer=optimizer, 
                 loss_function=loss_function, iterations=iterations,batch=batch)
-                print("Epoch {} loss {:.8f} lr:{}".format(game, loss,optimizer.param_groups[0]["lr"]))
-                loss_history.append(loss) # Add current loss to history.
+
+                loss_test = network.evaluate_test(casemanager = datamanager_test,model=self.rollout_policy, 
+                loss_function= loss_function,batch_size=batch)
+                print("Epoch {} loss {:.8f} loss_test {:.8f} lr:{}".format(game, loss,loss_test,optimizer.param_groups[0]["lr"]))
+                #loss_history.append(loss) # Add current loss to history.
                 
                 #print(optimizer.param_groups[0]["lr"])
                 # collect the last x losses from history.
