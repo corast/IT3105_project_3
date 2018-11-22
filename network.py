@@ -173,7 +173,7 @@ def weights_init(model): # Will reset states if called again.
 def train_batch(casemanager:Datamanager, model, optimizer, loss_function, batch):
     # Switch to training mode
     model.train()
-    x,y = casemanager.return_batch(batch)# 10 training cases
+    x,y = casemanager.return_batch(batch, model.input_type)# 10 training cases
     y_pred = model(x)
     loss = loss_function(y_pred,y) 
     #print(t, loss.item())
@@ -185,7 +185,7 @@ def train_batch(casemanager:Datamanager, model, optimizer, loss_function, batch)
 def evaluate_test(casemanager:Datamanager, model, loss_function):
     model.eval() # Change behaviour of some layers, like no dropout etc.
     with torch.no_grad(): # Turn off gradient calculation requirements, faster.
-        data,target = casemanager.return_batch("all")
+        data,target = casemanager.return_batch("all",model.input_type)
         prediction = model(data)
         return loss_function(prediction,target).item() # Get loss value.
 
@@ -211,26 +211,78 @@ def HEX_CNN(name, dim, filepath=None):
         nn.ReLU(),
         #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
         Flatten(),
-        nn.Linear(75, 25),
+        nn.Linear(75, target_dim),
         nn.Softmax(dim=-1), name=name,input_type=2, filepath=filepath)
 
 def HEX_CNN_L2(name, dim, filepath=None): 
+    input_dim = (dim*dim*2)+2
+    target_dim = dim*dim 
     return Model(                                    # O = (5-3 +2) +1 = 5 
         nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
         nn.ReLU(),
         Flatten(),
         nn.Linear(75, 50),nn.ReLU(),
-        nn.Linear(50, 25),nn.ReLU(),
+        nn.Linear(50, target_dim),nn.ReLU(),
         nn.Softmax(dim=-1), name=name,input_type=2,filepath=filepath)
+
+def NN_25(name, dim, filepath=None):
+    input_dim = 1+(dim*dim) # PID + board
+    target_dim = dim*dim
+    return Model(
+        nn.Linear(input_dim, 25),nn.Sigmoid(), # Relu will lose player 2 info
+        nn.Linear(25,target_dim), nn.Softmax(dim=-1),
+        name=name, 
+        filepath=filepath,
+        input_type=3
+    )
+
+def NN_50(name, dim, filepath=None):
+    input_dim = 1+(dim*dim) # PID + board
+    target_dim = dim*dim
+    return Model(
+        nn.Linear(input_dim, 50),nn.Sigmoid(), # Relu will lose player 2 info
+        nn.Linear(50,target_dim), nn.Softmax(dim=-1),
+        name=name, 
+        filepath=filepath,
+        input_type=3
+    )
+
+def NN_90_50(name, dim, filepath=None):
+    input_dim = 1+(dim*dim) # PID + board
+    target_dim = dim*dim
+    return Model(
+        nn.Linear(input_dim, 90),nn.Sigmoid(), # Relu will lose player 2 info
+        nn.Linear(90, 50),nn.Sigmoid(),
+        nn.Linear(90,target_dim), nn.Softmax(dim=-1),
+        name=name, 
+        filepath=filepath,
+        input_type=3
+    )
+
+def NN_CUSTOM(name, dim,input_type=1): # filepath if we want to load prev models.
+    input_dim = 1+(dim*dim) # PID + board
+    target_dim = dim*dim
+    return Model(
+        nn.Linear(input_dim, 90),nn.Sigmoid(), # Relu will lose player 2 info
+        nn.Linear(90, 50),nn.Sigmoid(),
+        nn.Linear(90,target_dim), nn.Softmax(dim=-1),
+        #model settings
+        name=name,
+        input_type=3
+    )
+
+
 
 def train_architecture_testing():
     #torch.manual_seed(999) # set seeds
     #np.random.seed(999)
     #Load datamanager for both files.
-    dataset_train = Datamanager.Datamanager("Data/random_15000.csv",dim=5, modus=2)
-    dataset_test = Datamanager.Datamanager("Data/random_20000.csv",dim=5, modus=2)
-    #model = HEX_CNN(name="CNNET_TEST", dim=5)
-    model = HEX_CNN(name="CNN-SSE-ADAM", dim=5)
+    dataset_train = Datamanager.Datamanager("Data/training_tournament.csv",dim=5,limit=5000)
+    dataset_test = Datamanager.Datamanager("Data/random_20000.csv",dim=5, limit=5000)
+    model = HEX_CNN(name="CNN-20000-3", dim=5)
+    #model = HEX_CNN(name="CNN-SSE-ADAM", dim=5)
+#    HEX_CNN
+    #model = NN_50(name="NN_50_15000",dim=5)
     model.apply(weights_init)
     #model = Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod")
     #model =  Model(nn.Conv1d(50,52,kernel_size=4,stride=1,padding=1),nn.ReLU(),nn.MaxPool1d(kernel_size=4, stride=2, padding=1), nn.Linear(50,25) ,nn.Softmax(dim=-1), name="rms_mod")
@@ -238,7 +290,7 @@ def train_architecture_testing():
     #print(model)
     #exit()
     # Create a model to train on. SGD>Adagrad>Adadelta>RMSprop>Adam
-    optimizer = optim.Adam(model.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6,amsgrad=True,weight_decay=0.005) # 0.14, 0.18, 2: 0.10 ,0.133
+    optimizer = optim.Adam(model.parameters(), lr=0.0025,betas=(0.9,0.999),eps=1e-6,amsgrad=True,weight_decay=0.0075) # 0.14, 0.18, 2: 0.10 ,0.133
     #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 4 ...
     #optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test
     #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0) # 0.40 (0.45 train) 0.65 test
@@ -249,19 +301,22 @@ def train_architecture_testing():
     # * Loss functions which multitargets
     #loss_function = pyloss.MSELoss()
     loss_function = pyloss.MSELoss(reduction='sum') # a bit better
+    #loss_function = CategoricalCrossEntropyLoss()
     #loss_function = pyloss.L1Loss()
     #loss_function = pyloss.SmoothL1Loss()
     #loss_function = pyloss.NLLLoss2d()
     #loss_function = pyloss.MultiLabelSoftMarginLoss()
     #loss_function = CategoricalCrossEntropyLoss()
     #loss_function = RootMeanSquareLoss()
-    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
-    for itt in range(1000):
-        loss_train,loss_test = train(model,batch=50, iterations=10,
-        casemanager_train=dataset_train,casemanager_test=dataset_test, optimizer = optimizer, loss_function=loss_function, verbose=200)
-        #scheduler.step(loss_test)
+    # 0.005 :0.5 - 0.42; 0.001: 0.6 - 0.5; 0.0025: 0.45 - 0.40
+    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.05, patience=20)
+    for itt in range(1500):# casemanager_test=dataset_test
+        loss_train = train(model,batch=40, iterations=20,
+        casemanager_train=dataset_train, optimizer = optimizer, loss_function=loss_function, verbose=200)
+        #scheduler.step(loss_train)
+        loss_test = 0
         print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} lr:{}".format(itt, loss_train,loss_test ,optimizer.param_groups[0]["lr"]))
         #print(optimizer["lr"])
-    model.store(epoch=500, optimizer = optimizer, loss = loss_train)
+    model.store(epoch=1000, optimizer = optimizer, loss = loss_train)
 
 #train_architecture_testing()

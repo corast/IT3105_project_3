@@ -18,13 +18,10 @@ import misc
 #import pandas
 
 class Datamanager():
-    def __init__(self, filepath, dim=5, modus=1, limit=500):
+    def __init__(self, filepath, dim=5, limit=500):
         self.filepath = filepath
         self.limit = limit
         self.dim = dim # dim of game we use
-        if(modus not in [1,2,3]):
-            raise ValueError("Incorrect modus selected ", modus, "must be 1,2 or 3")
-        self.modus = modus # 3 moduses, "normal", "cnn", "flat_cnn"
         if(not os.path.isfile(filepath)):  # * Create filepath, if it doest exist already.
             with open (filepath,"a") as file:
                 pass
@@ -38,7 +35,8 @@ class Datamanager():
         self.__switcher = {
             1:self.normal,
             2:self.cnn,
-            3:self.cnn_flatten
+            3:self.normal_2,
+            4:self.cnn_flatten
             }
 
     def read_csv(self,header=False): # amount is to specify whether or not we want all the file or not.
@@ -105,7 +103,7 @@ class Datamanager():
             return num
         return tot_size # Know we want all cases.
 
-    def return_batch(self, batch_size): # Return tensor with batch_size from file.
+    def return_batch(self, batch_size, modus): # Return tensor with batch_size from file.
         """ Return two tensors(inputs, targets) of size batch_size from bufferfile"""
 
         #Handle converting data to correct network innput, CNN takes 3 channels.
@@ -134,7 +132,7 @@ class Datamanager():
 
         # Depending on modus: 
         #        
-        t_inputs = self.__switcher.get(self.modus)(data_pid, data_inputs,self.dim) # Get inputs
+        t_inputs = self.__switcher.get(modus)(data_pid, data_inputs,self.dim) # Get inputs
         t_targets = torch.from_numpy(np.array(data_targets)).float()
 
         return t_inputs, t_targets
@@ -147,6 +145,7 @@ class Datamanager():
         """ return number of rows in csv file"""
         data = self.read_csv()
         return len(data)
+
     def normal(self,data_pid,data_inputs,dim):
         # inputs:  PID + board_state
         PID =  np.array([misc.int_to_binary_rev(pid) for pid in data_pid])
@@ -155,7 +154,13 @@ class Datamanager():
         # * PID + board_state as one hot vectors per cell.
         return torch.from_numpy(inputs).float() # * (Bx52) 
 
-    def cnn(self,data_pid,data_inputs,dim): # Tensor with shape (B,channels,dim,dim)
+    def normal_2(self, data_pid, data_inputs, dim): #Return as 26 x 25.
+        PID = np.array([misc.reverse_2([pid]) for pid in data_pid])
+        inputs = np.array([misc.reverse_2(board) for board in data_inputs])
+        inputs = np.append(PID, inputs, axis=1)
+        return torch.from_numpy(inputs).float() # * (Bx26)
+
+    def cnn(self,data_pid,data_inputs, dim): # Tensor with shape (B,channels,dim,dim)
         PID = np.array([np.full((self.dim,self.dim),(2-pid)) for pid in data_pid]) # Player 2 = 0, Player 1 = 1
         inputs = np.array([misc.get_player_states(board,self.dim,ravel=False) for board in data_inputs])
         PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1],PID.shape[2]))
@@ -171,10 +176,29 @@ class Datamanager():
         inputs = np.array([misc.get_player_states(board,self.dim,ravel=True) for board in data_inputs])
         PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1]))
         inputs = np.concatenate((inputs, PID),axis=1)
-
         return torch.from_numpy(inputs).float() # * (B x 3 x 25)  For CNN1d
 
     # Extra functions almost never used.
+
+    def fix_board_state_player(self):
+        print("Fixing", self.filepath)
+        # Need to itterate every elemeng and replace "1" with "2", and "2" with "1"
+        #print("Before:",len(self.buffer),self.buffer[:2])
+        for r,row in enumerate(self.buffer):
+            #Want to remove first 52 numbers.
+            data = row
+            board = row[:26] # first 52 numbers
+            targets = row[26:] # target values
+            new_row = []
+            for i,cell in enumerate(board):
+                if cell == "1":
+                    board[i] = "2"
+                elif cell == "2":
+                    board[i] = "1"
+            self.buffer[r] = board + targets # put them back together
+        
+        #print("After:",len(self.buffer),self.buffer[:2])
+        self.update_csv_limit()
 
     def fix_board_state(self):
         raise Exception("Don't use this function..")

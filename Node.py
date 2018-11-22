@@ -54,8 +54,9 @@ class Node():
         #loses = wins - self.num # Number of wins along this route - Number of visits.
         return self.wins/self.num_visits # return w_i / n_i 
 
-    # ****** SELECT FUNCTION
-
+    ###############################
+    # ****** SELECT FUNCTION ******
+    ###############################
     def best_child(self, root_player, c=2): # Return best child from a parent node 
         # need to check children to self, and pick the action which has the best value / Visits.
         # Must handle children that has not been visited yet
@@ -81,7 +82,8 @@ class Node():
     def get_best_child(self, c=0, data=False): # What we use to 
         # TODO: Handle fewer simmulations than children.
 
-        choices = [self.get_score(child, c) for child in self.children] # Get score from each child node.
+        #choices = [self.get_score(child, c) for child in self.children] # Get score from each child node.
+        choices = [child.num_visits for child in self.children]
         if(data): # * If we want to return important information about the child states values, for creating a training case.
             # We should return an array with 25x25 values.
             dimention = self.game.get_dimentions() # Should return two dimentions, x and y.
@@ -94,13 +96,10 @@ class Node():
                 
             print(data_visits)
             player = [self.game.get_current_player()]
-            print(player)
             #PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
             data_input = self.game.get_state_as_input()
-            print(data_input)
             #data_input.extend(0,PID)
             data_target = misc.normalize_array(data_visits)  
-            print(data_target)
             #  One row of data : [player_id, row1, row2, row3,...]
             #print(type(player), type(data_input), player, data_input)
             return self.children[np.argmax(choices)], player + data_input + data_target # * Return data per move.
@@ -108,8 +107,9 @@ class Node():
         # * Select child with best score
         return self.children[np.argmax(choices)] # Select index of best child.
 
-    # ***** EXPAND FUNCTIONS
-
+    ##############################
+    # ***** EXPAND FUNCTIONS *****
+    ##############################
     def init_children(self,verbos=0): # connect every possible child to its parent. Expand whole parent.
         actions = self.game.get_actions() # Get actions we can take from a given state in a game.
         #self is the parent we want to add the children to.
@@ -122,8 +122,9 @@ class Node():
         node = Node(game=game, action=action, parent=self, node_depth=self.node_depth+1) # New node should be a result of taking one action from parent
         self.children.append(node) # Add child to parent node
 
-    # ***** ROLLOUT FUNCTIONS
-
+    ###############################
+    # ***** ROLLOUT FUNCTIONS *****
+    ###############################
     
     def rollout_policy_network(self, rollout_state,  anet:network.Model, greedy): # TODO: high probability for random to begin with.
         #TODO: Fix inputs...
@@ -137,6 +138,8 @@ class Node():
             network_input = misc.get_normal_input(data_pid,data_input)
         elif(anet.input_type == 2): 
             network_input = misc.get_cnn_input(data_pid,data_input,self.game.get_dimentions()[0])
+        elif(anet.input_type == 3):
+            network_input = misc.get_normal_2(data_pid=data_pid, data_inputs=data_input)
         #misc.get_input_network(data_pid=data_pid, data_input)
         #anet.input_type
         #print("network_input",network_input.shape)
@@ -186,8 +189,9 @@ class Node():
         return rollout_state.get_winner() # * Return which player won, and give wins accordingly.
         #return rollout_state.get_reward(root_player),rollout_state.get_winner()# We need to check if current player from root won. (who made the play to leaf)
 
-    # *** BACKPROGAPAGE FUNCTION
-
+    ####################################
+    # ***** BACKPROGAPAGE FUNCTION *****
+    ####################################
     def backpropagate(self, winner, root_player): # Must keep track of the reward for each step. 
         self.num_visits += 1 # Store numer of visits.
         if self.is_root(): #if we root of tree, we return, as root state is not something we can visit again anyway.
@@ -202,8 +206,9 @@ class Node():
             #    self.wins += 1 
         self.parent.backpropagate(winner, root_player) # The reward from the state, should backprogogate back up root    
 
-    # ***** CHECK FUNCTIONS
-
+    #############################
+    # ***** CHECK FUNCTIONS *****
+    #############################
     def is_termal_node(self): # Check if we are a leaf node
         return self.game.is_game_over() # We check state if we are done
         #return len(self.children) == 0 #We shouldnt have any children in this case. 
@@ -223,8 +228,9 @@ class Node():
                 return False
         return True
 
-    # *** DISPLAY/VERBOSE FUNCTIONS
-
+    #######################################
+    # ***** DISPLAY/VERBOSE FUNCTIONS *****
+    #######################################
     def print_state(self,action): # self is current game state
         self.game.display_turn(action)
 

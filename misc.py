@@ -155,3 +155,15 @@ def get_normal_input(data_pid,data_inputs): # Don't need to know board dimention
     inputs = np.append(PID, inputs, axis=1)
     # * PID + board_state as one hot vectors per cell.
     return torch.from_numpy(inputs).float() # * (Bx52) 
+
+def get_normal_2(data_pid, data_inputs): #Return as 26 x 25.
+    PID = np.array([reverse_2([pid]) for pid in data_pid])
+    inputs = np.array([reverse_2(board) for board in data_inputs])
+    inputs = np.append(PID, inputs, axis=1)
+    return torch.from_numpy(inputs).float() # * (Bx26)
+
+def reverse_2(data):#max(result_2,key=lambda x:int(x[1]))
+    for i,n in enumerate(data):
+        if( n == 2):
+            data[i] = -1 # Rest should be the same
+    return data

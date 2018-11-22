@@ -196,6 +196,7 @@ if __name__=="__main__":
 
     parser_c = subparsers.add_parser("DATA") # Only store data.
     parser_d = subparsers.add_parser("FIX")
+    parser_e = subparsers.add_parser("PLAY")
 
     args = parser.parse_args()
 
@@ -211,17 +212,24 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/hex_3.csv",dim=args.dimentions,modus=2,limit=5000)
+    datamanager = Datamanager("Data/buffer_HEX_CNN_2.csv",dim=args.dimentions,limit=500)
     print(datamanager.filepath)
     # ! HEX-CNN buffer_HEX_CNN
     # ! HEX-CNN-L2 buffer_HEX_CNN-L2
+
+    # ! HEX-CNN buffer_HEX_CNN
+    # ! HEX-CNN-2 buffer_HEX_CNN_2
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
             # create network.
-            rollout_policy = network.HEX_CNN("HEX-CNN-L2",args.dimentions) # Use default values
-            rollout_policy.apply(network.weights_init) # init weights and biases.
-            print("Network", rollout_policy,"input-type",rollout_policy.input_type)
+            
+            rollout_policy = network.HEX_CNN("HEX-CNN-2",args.dimentions) # Use default values
+            #rollout_policy = network.HEX_CNN_L2("NN-50",args.dimentions) # Use default values
+            #rollout_policy = network.NN_25("NN-50",args.dimentions) # Use default values
+            #rollout_policy = network.NN_50("NN-50",args.dimentions) # Use default values
+            #rollout_policy.apply(network.weights_init) # init weights and biases.
+            print("Network", rollout_policy,"input-type", rollout_policy.input_type)
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             optimizer = optim.Adam(rollout_policy.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6)
@@ -250,10 +258,13 @@ if __name__=="__main__":
             epoch = 0 # rollout_policy
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             optimizer = optim.Adam(rollout_policy.parameters(), lr=1e-3,betas=(0.9,0.999),eps=1e-6)
+            #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 
+            #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0)
             #loss_function = nn.MultiLabelMarginLoss()
             #loss_function = pyloss.MSELoss(reduction='sum') # a bit better
-            loss_function = network.CategoricalCrossEntropyLoss()
+            #loss_function = network.CategoricalCrossEntropyLoss()
             #loss_function = pyloss.MSELoss()
+            loss_function = pyloss.MSELoss(reduction='sum') # a bit better
             # Load previous model from file if exists.
             if(rollout_policy is not None): # * Load from prev saved model if exists.
                 name = rollout_policy.name
@@ -303,7 +314,10 @@ if __name__=="__main__":
             mcts.gather_data = True # need to specificly set this.
             mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
         elif(args.sub_action == "FIX"):
-            datamanager.fix_board_state()
+            raise ValueError("DONT USE FIX")
+            #datamanager.fix_board_state_player()
+        elif(args.sub_action == "PLAY"):
+            mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
         else: # Assume we just want to play
             mcts.play_batch(games=games,num_sims=args.num_sims,start_player=args.start_player)
             
