@@ -4,6 +4,13 @@ from HEX import *
 import argparse
 import variables
 import actor
+import sys
+import os
+stderr = sys.stderr
+sys.stderr = open(os.devnull, 'w')
+from keras.models import load_model
+sys.stderr = stderr
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #from variables import *
 from Node import *
 from MCTS import *
@@ -137,20 +144,18 @@ if __name__=="__main__":
     """parser.add_argument("-a","--action", choices=["train","play","play_tourn","test","data"],
                         required=True, type=str)  """
     parser.add_argument("-r","--rollout",choices=["random","ANET"],
-                        default = "random", required=False) 
+                        default = "random", required=True) 
     parser.add_argument("-d","--dimentions", type=check_positive, help="Dimention of board", 
                 default=5, required=False)
     parser.add_argument("-tl","--time_limit", default = False, type=bool,
                                 required=False)
-    parser.add_argument("-k","--keras", type=check_bool, required=True)
 
         # dest is where we store string we chose as action, to use later.
-    subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help",required=True)
-
+    subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help")
     parser_a = subparsers.add_parser("TRAIN")
-    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=5,
+    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=4,
                     type=check_positive)
-    parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=30,
+    parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=32,
                     type=check_positive)
     parser_a.add_argument("-sf","--storage_frequency",help="how often we store a mode, w.r.t. training", default=10,
                     type=check_positive)
@@ -164,6 +169,7 @@ if __name__=="__main__":
     parser_a.add_argument("-it","--init_train", help="Init training on data",type=bool, default=False)
 
 
+
     parser_b = subparsers.add_parser("TOPP") # TOPP tournament
 
     parser_b.add_argument("-g","--topp_games",type=check_positive, default=10)
@@ -173,7 +179,6 @@ if __name__=="__main__":
 
     parser_c = subparsers.add_parser("DATA") # Only store data.
     parser_d = subparsers.add_parser("FIX")
-    parser_e = subparsers.add_parser("PLAY")
 
     args = parser.parse_args()
 
@@ -192,7 +197,7 @@ if __name__=="__main__":
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
-            if(not args.keras): # If we are not using keras
+            if(False): # If we are not using keras
                 import torch.optim as optim
                 import torch.nn.modules.loss as pyloss
                 import network
@@ -216,19 +221,29 @@ if __name__=="__main__":
             else: 
                 import network_keras
                 from keras.optimizers import SGD,Adam,Adagrad,RMSprop
-                print("hello")
+                from keras import losses
+
                 sgd = SGD(lr=0.01)
                 rmsprop = RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=0.0)
                 adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
                 adagrad = Adagrad(lr=0.01, epsilon=None, decay=0.0)
-                pass
+                
+                mse = losses.mean_squared_error
+                cce = losses.categorical_crossentropy
+                #Loss functions:
+                #"categorical_crossentropy", "mse"
+
+                rollout_policy = network_keras.CNN_50_25(name="CNN-50-25",dim=args.dimentions)
+
+                mcts = MCTS(node=root,
+                    time_limit=args.time_limit, rollout_policy=rollout_policy)
         else:
             mcts = MCTS(node=root, 
                 time_limit=args.time_limit) 
         #mcts.simulate_best_action(root,10)
         if(args.sub_action == "TRAIN"): # We want to train against ourself.
             
-            datamanager = Datamanager("Data/data_CNN_L4.csv",dim=args.dimentions,modus=2,limit=500)
+            datamanager = Datamanager("Data/buffer_CNN_50_25.csv",dim=args.dimentions,modus=2,limit=500)
             print(datamanager.filepath)
             mcts.dataset = datamanager
 
@@ -247,16 +262,17 @@ if __name__=="__main__":
             # Load previous model from file if exists.
             if(rollout_policy is not None): # * Load from prev saved model if exists.
                 name = rollout_policy.name
-                path = misc.find_newest_model(name)
+                path, epoch = misc.find_newest_model_keras(name)
+                print(path)
                 if(path is not None): # TODO: make sure optimizer is the same, otherwise error here.
                     # Load model from path.
-                    loss, epoch = rollout_policy.load_model(path,optimizer=optimizer) # Load optimizer settings too.
+                    rollout_policy.load(path)
+                    #loss, epoch = rollout_policy.load_model(path,optimizer=optimizer) # Load optimizer settings too.
 
                     print("Loading self from path \"{}\" at epoch {}".format(path, epoch))
             else:
                 print("Using random rollout only ----------- ")
-            mcts.play_batch_with_training(optimizer=optimizer,epoch=epoch,
-            loss_function=loss_function,games=games,training_frequency=training_frequency, storage_frequency=storage_frequency, 
+            mcts.play_batch_with_training(epoch=epoch, games=games,training_frequency=training_frequency, storage_frequency=storage_frequency, 
             num_sims=args.num_sims, iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games, init_train=init_train)
         elif(args.sub_action == "TOPP"):
             # Load models from file and start tournament between them.

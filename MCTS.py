@@ -154,17 +154,16 @@ class MCTS():
         # Player turn should be P.
         # We need to create new games of nim for each starting player.
 
-    def play_batch_with_training(self, optimizer, loss_function, games, training_frequency, storage_frequency, num_sims, init_data_games=0, data_sims = 0, epoch=0, start_player=1, iterations=10, batch=30, init_train=False): # * Function to train for each batch.
+    def play_batch_with_training(self, games, training_frequency, storage_frequency, num_sims, init_data_games=0, data_sims = 0, epoch=0, start_player=1, iterations=10, batch=30, init_train=False): # * Function to train for each batch.
         # batch_size is number of games we play, num_sims is seconds we simulate for each move.
         # storage_frequency is how often we save an agent. training_frequency is how many games between training.
         # If batch is 1, we train after each game, otherwise we choose.
         # We also don't want to start training until buffer is filled with random data.
         if(start_player < 1 or start_player > 3):
             raise ValueError('Value of {} as P is not supported'.format(start_player))
-
         if(epoch == 0): # Save network if we are starting from scratch.
             #Start by saving the network as agent 0.
-            self.rollout_policy.store(epoch=0, optimizer=optimizer, loss=1000)#Max loss to begin with.
+            self.rollout_policy.store(epoch=0)#Max loss to begin with.
             #pass
 
         # fill buffer using random rollout, since this is better than untrained network.
@@ -181,18 +180,9 @@ class MCTS():
             # We want to train policy on data we have in buffer, atleast a little bit.
             dataset_test = Datamanager("Data/data_r_test.csv",dim=5,modus=self.dataset.modus)
             print("Pretraining on {} with test {}".format(self.dataset.filepath, dataset_test.filepath))
-            #exit()
-            init_optimizer = torch.optim.RMSprop(self.rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
-            #init_optimizer = copy.copy(optimizer) # Don't want to change params on self training optimizer.
-            init_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(init_optimizer, 'min')
-            for itt in range(1,100+1): # 10 itterations, batch 50
-                self.rollout_policy.train(casemanager_train=self.dataset)
-                loss_train,loss_test = network.train(self.rollout_policy,batch=50, iterations=10,
-                casemanager_train=self.dataset,casemanager_test=dataset_test, optimizer = init_optimizer,loss_function=loss_function,verbose=100)
-                init_scheduler.step(loss_test)  
-                print("pre_itteration {}  loss_train: {:.9f} loss_train: {:.9f} lr: {} ".format(itt, loss_train,loss_test, optimizer.param_groups[0]["lr"]))
+            self.rollout_policy.train(datamanager=self.dataset, epochs=init_train,batch_size=batch)
             # Store network again.
-            self.rollout_policy.store(epoch=-1, optimizer=optimizer, loss=loss_train) # Dont want to store this optimizer.
+            self.rollout_policy.store(epoch=1) # Dont want to store this optimizer.
 
         if(variables.verbose > variables.play):
             print("Start training with self play using policy network")
@@ -200,7 +190,7 @@ class MCTS():
         training_count = epoch # Count number of times we have trained, to easily check if needing to store.
         loss_history = [] # Store previous losses
         #scheduler = torch.optim.lr_scheduler(optimizer,step_size = 30, )
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
+        #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5)
         #97,5 90, 80, 60
         #1/version 
         decrease = 0.025 # For each training dercrease by 5
@@ -216,9 +206,9 @@ class MCTS():
             # Check winner.
             if(game % training_frequency == 0): # We want to train between every game?
                 #We train.
-                loss = self.rollout_policy.train(casemanager_train=self.dataset, epochs=iterations,batch_size=batch)
-                print("Epoch {} loss {:.8f} lr:{}".format(game, loss,optimizer.param_groups[0]["lr"]))
-                loss_history.append(loss) # Add current loss to history.
+                self.rollout_policy.train(datamanager=self.dataset, epochs=iterations,batch_size=batch)
+                #print("Epoch {} loss {:.8f} lr:{}".format(game, loss,optimizer.param_groups[0]["lr"]))
+                #loss_history.append(loss) # Add current loss to history.
                 
                 #print(optimizer.param_groups[0]["lr"])
                 # collect the last x losses from history.

@@ -56,7 +56,7 @@ class Model():
         print(score)
     
     def predict(self, input): #takse an pid + board state as input and return distribution.
-        pass
+        return self.model.predict(input)
 
 
 def load_model(filepath, weight_path,optimizer, loss, name, input_type=1):
@@ -91,7 +91,16 @@ def NN_50_25(name="NN-50-25",dim=5):
     ],
     optimizer=adam, loss="categorical_crossentropy",name=name)
 
-model_1 = CNN_50_25(dim=5)
+def CNN_25(name="CNN-25",dim=5):
+    return Model(model=[
+    Conv2D(data_format="channels_first",filters=3,input_shape=(3,dim,dim),kernel_size=3,padding="same",activation="relu"), # (Bx 75)
+    #Conv3D(data_format="channel_first",filters=5,input_shape=(3,25),kernel_size=(1,3,3),padding=1,activation="relu"),
+    Flatten(),
+    Dense(dim*dim, activation="softmax") # 50 -> 25
+    ],
+    optimizer=adam, loss="categorical_crossentropy",name=name)
+
+model_1 = CNN_25(dim=5)
 def try_training():
     datamanager = Datamanager.Datamanager("Data/random_15000_1.csv")
     datamanager_test = Datamanager.Datamanager("Data/random_20000.csv")

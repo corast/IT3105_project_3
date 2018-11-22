@@ -124,16 +124,16 @@ class Node():
         #data_input = PID + data_input # input to our network.
         # Need to convert list to tensor.
         data_pid=[self.game.get_current_player()]
-        if(anet.input_type == 1):
-            network_input = misc.get_normal_input(data_pid,data_input)
-        elif(anet.input_type == 2): 
-            network_input = misc.get_cnn_input(data_pid,data_input,self.game.get_dimentions()[0])
+        dim = self.game.get_dimentions()[0]
+        network_input = misc.get_network_input(data_pid,data_input, dim=dim, modus=anet.input_type)
+
+        #network_input = misc.get_cnn_input(data_pid,data_input,self.game.get_dimentions()[0])
         #misc.get_input_network(data_pid=data_pid, data_input)
         #anet.input_type
         #print("network_input",network_input.shape)
-        output = anet.evaluate(network_input) # output should be an vector with same size as board.
+        output = anet.predict(network_input) # output should be an vector with same size as board.
 
-        output = torch.Tensor.numpy(output.detach()) # convert to numpy array.
+        #output = torch.Tensor.numpy(output.detach()) # convert to numpy array.
         #print(output)
         legal_moves = rollout_state.get_legal_actions_bool() # 1 is legal, 0 is illegal.
         

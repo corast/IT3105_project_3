@@ -12,7 +12,6 @@ from itertools import permutations
 import copy
 import variables
 
-#TODO Names
 class Actor():
     def __init__(self, model=None, filepath=None, name="random"):
             #Assumes an model is already preinstanciated with weights.

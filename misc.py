@@ -90,16 +90,40 @@ def find_newest_model(name):
     import os
     # Find every file in directory of models with same name
     result = glob.glob("models/"+name+"/"+name+"*")
+    print(result)
     if(len(result) == 0):
         return None
     result_2 =[x.split("_") for x in result]
     # We need to use the second index to rank results.
-    result_3 = max(result_2,key=lambda x:int(x[1]))
+
+    result_3 = max(result_2,key=lambda x: int(x[1].partition(".")[0]))
     path = "_".join(result_3)
     if(os.path.isfile("_".join(result_3))):
         return path
     else:
         print("{} is not a regular file".format(path))
+
+def find_newest_model_keras(name):
+    # Look for network with similar name with different ending. E.g. TESTNET_xxxx
+    import glob
+    import os
+    # Find every file in directory of models with same name
+    result = glob.glob("models/"+name+"/"+name+"*"+".h5")
+
+    if(len(result) == 0):
+        return None
+    result_2 =[x.split("_") for x in result]
+
+    result_3 = max(result_2,key=lambda x:int(x[1].partition(".")[0]))
+    epoch = int(result_3[1].partition(".")[0])
+    # We need to use the second index to rank results.
+    path = "_".join(result_3)
+    if(os.path.isfile("_".join(result_3))):
+        return path, epoch
+    else:
+        print("{} is not a regular file".format(path))
+
+
 
 def find_models(name):
     import glob
@@ -156,3 +180,15 @@ def get_normal_input(data_pid,data_inputs): # Don't need to know board dimention
     inputs = np.append(PID, inputs, axis=1)
     # * PID + board_state as one hot vectors per cell.
     return torch.from_numpy(inputs).float() # * (Bx52) 
+
+def get_network_input(data_pid,data_inputs,dim,modus):
+    if(modus == 1):# * (B x 52)
+        PID =  np.array([int_to_binary_rev(pid) for pid in data_pid])
+        inputs = np.array([one_hot_array(board) for board in data_inputs])
+        inputs = np.append(PID, inputs, axis=1)
+    elif(modus == 2): # * (B x 3x5x5)
+        PID = np.array([np.full((dim,dim),(2-pid)) for pid in data_pid]) # Player 2 = 0, Player 1 = 1
+        inputs = np.array([get_player_states(board,dim,ravel=False) for board in data_inputs])
+        PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1],PID.shape[2]))
+        inputs = np.concatenate((inputs,PID),axis=1)
+    return inputs#, np.array(data_targets)
