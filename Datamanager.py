@@ -163,6 +163,10 @@ class Datamanager():
             inputs = np.array([misc.get_player_states(board,self.dim,ravel=False) for board in data_inputs])
             PID = np.reshape(PID,(PID.shape[0],1,PID.shape[1],PID.shape[2]))
             inputs = np.concatenate((inputs,PID),axis=1)
+        elif(modus == 3): # * (B x 26)
+            PID = np.array([misc.reverse_2(pid) for pid in data_pid])
+            inputs = np.array([misc.reverse_2(board) for board in data_inputs])
+            inputs = np.append(PID, inputs, axis=1) 
         else:
             raise ValueError("Modus not supporter", modus)
         return inputs, np.array(data_targets)

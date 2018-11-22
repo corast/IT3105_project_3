@@ -144,7 +144,7 @@ if __name__=="__main__":
     """parser.add_argument("-a","--action", choices=["train","play","play_tourn","test","data"],
                         required=True, type=str)  """
     parser.add_argument("-r","--rollout",choices=["random","ANET"],
-                        default = "random", required=True) 
+                        default = "random") 
     parser.add_argument("-d","--dimentions", type=check_positive, help="Dimention of board", 
                 default=5, required=False)
     parser.add_argument("-tl","--time_limit", default = False, type=bool,
@@ -179,6 +179,7 @@ if __name__=="__main__":
 
     parser_c = subparsers.add_parser("DATA") # Only store data.
     parser_d = subparsers.add_parser("FIX")
+    parser_e = subparsers.add_parser("PLAY")
 
     args = parser.parse_args()
 
@@ -232,8 +233,8 @@ if __name__=="__main__":
                 cce = losses.categorical_crossentropy
                 #Loss functions:
                 #"categorical_crossentropy", "mse"
-
-                rollout_policy = network_keras.CNN_50_25(name="CNN-50-25",dim=args.dimentions)
+                # ! no _ in name, otherwise we won't find latest version when training from file.
+                rollout_policy = network_keras.NN_50_25(name="K-NN.25",dim=args.dimentions)
 
                 mcts = MCTS(node=root,
                     time_limit=args.time_limit, rollout_policy=rollout_policy)
@@ -243,11 +244,11 @@ if __name__=="__main__":
         #mcts.simulate_best_action(root,10)
         if(args.sub_action == "TRAIN"): # We want to train against ourself.
             
-            datamanager = Datamanager("Data/buffer_CNN_50_25.csv",dim=args.dimentions,modus=2,limit=500)
+            datamanager = Datamanager("Data/buffer_K_NN_50.csv",dim=args.dimentions,modus=2,limit=500)
             print(datamanager.filepath)
             mcts.dataset = datamanager
 
-            action = variables.action.get("train")
+            action = variables.action.get("train") # Not sufe if used anymore
             mcts.gather_data = True # need to specificly set this.
             iterations = args.iterations # default 5
             batch = args.batch_size # default 50

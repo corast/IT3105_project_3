@@ -56,7 +56,7 @@ class HEX_Cell():
     
     def is_edge_of_interest(self,player):
         # Check whether or not we are a connection node to an edge of interest.
-        if(player == 1):
+        if(player == 2):
             return self.logical_or_and(HEX_Cell.BLACK_L, HEX_Cell.BLACK_R, self.edge_v)
         else:
             return self.logical_or_and(HEX_Cell.RED_B, HEX_Cell.RED_T, self.edge_v)
@@ -309,9 +309,9 @@ class HEX_State(State):
                 # Figure out what colour the state should be in. 
                 state = Fore.WHITE+str(cell.state)
                 if(cell.state == 2):
-                    state = colored.red(str(cell.state))
-                elif(cell.state == 1):
                     state = colored.blue(str(cell.state))
+                elif(cell.state == 1):
+                    state = colored.red(str(cell.state))
 
                 # if state is current piece, we can colour it yellow.
                 # Green states should be the correct path.
@@ -366,9 +366,7 @@ class HEX_State(State):
         #                            \ / \ /
         #                            \1---0/
         #                              \ /  
-        #                               1                    
-        #                                       
-        #                                                       
+        #                               1                                                                   
         #                                               
         # Number of indentations:
         #xpad = cos(rotation)*xi - sin(rotation)*yi

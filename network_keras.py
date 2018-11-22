@@ -84,12 +84,20 @@ def CNN_50_25(name="CNN-50-25",dim=5):
     ], 
     optimizer=adam, loss="categorical_crossentropy",name=name, input_type=2)
 
-def NN_50_25(name="NN-50-25",dim=5):
+def NN_50_25(name="NN-50-25",dim=5): # input -> linear(50) -> relu -> linear(dim*dim) -> softmax
     return Model(model=[
-        Dense(50, activation="relu"),
+        Dense(50, activation="sigmoid"),
         Dense(dim*dim, activation="softmax")
     ],
-    optimizer=adam, loss="categorical_crossentropy",name=name)
+    optimizer=adam, loss="categorical_crossentropy",name=name,input_type=3)
+
+def NN_90_50_25(name="NN-90-50",dim=5): # input -> linear(90) -> relu ->  ->linear(dim*dim) -> softmax
+    return Model(model=[
+        Dense(90, activation="sigmoid"),
+        Dense(50, activation="sigmoid"),
+        Dense(dim*dim, activation="softmax")
+    ],
+    optimizer=adam, loss="categorical_crossentropy",name=name,input_type=3)
 
 def CNN_25(name="CNN-25",dim=5):
     return Model(model=[
@@ -98,7 +106,7 @@ def CNN_25(name="CNN-25",dim=5):
     Flatten(),
     Dense(dim*dim, activation="softmax") # 50 -> 25
     ],
-    optimizer=adam, loss="categorical_crossentropy",name=name)
+    optimizer=adam, loss="categorical_crossentropy",name=name,input_type=2)
 
 model_1 = CNN_25(dim=5)
 def try_training():

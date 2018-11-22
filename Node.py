@@ -125,6 +125,7 @@ class Node():
         # Need to convert list to tensor.
         data_pid=[self.game.get_current_player()]
         dim = self.game.get_dimentions()[0]
+        # TODO: Make for normal ann
         network_input = misc.get_network_input(data_pid,data_input, dim=dim, modus=anet.input_type)
 
         #network_input = misc.get_cnn_input(data_pid,data_input,self.game.get_dimentions()[0])
