@@ -8,7 +8,8 @@ import time
 
 
 class MCTS():
-    def __init__(self, node:Node, dataset:Datamanager=None, rollout_policy=None, random_rollout=False, greedy=False, time_limit = False, gather_data=False):
+    def __init__(self, node:Node, dataset:Datamanager=None, rollout_policy=None, random_rollout=False, 
+        greedy=True, time_limit = False, gather_data=False):
         self.root = node # Set root node of MCTS
             #TODO: use memory states, intra episode or not
         #self.memory_state = memory_state # How whether or not we want to keep memory in simulation.
@@ -197,6 +198,7 @@ class MCTS():
             print("Start training with self play using policy network")
         
         training_count = epoch # Count number of times we have trained, to easily check if needing to store.
+        store_count = int(training_count / storage_frequency) # Need to know how many times it divides
         #loss_history = [] # Store previous losses
         #scheduler = torch.optim.lr_scheduler(optimizer,step_size = 30, )
         #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.05) # decrease by a bit
@@ -209,11 +211,11 @@ class MCTS():
         for game in range(1+epoch, games + 1 + epoch): # number of games we play
             print("Game {}".format(game))
             sim_node = copy.deepcopy(self.root) # Copy root state of game. # So that we have a starting point to simulate from.
-            sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
+            sim_node.game.init_player_turn(start_player) # Change who begins in a given game state randomly
             # * Play game
             
-            ## *** Rollouts
-            #num_rollouts = max(800, int(num_sims*(epsilon+epsilon))) # We want to have alot of rollouts to begin with, and decrease these as we play
+            ## *** Rollouts # Need to decrease num_sims as we store a agent.
+            num_rollouts = max(800, int(num_sims-200*store_count)) # We want to have alot of rollouts to begin with, and decrease these as we play
             # epsilon = 0.3 -> 3000*0.6 = 1800 etc.
             print("Using epsilon",epsilon, "training_count", training_count, "on", self.rollout_policy.name)
             sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims, epsilon=epsilon) # get last state of game. # Testing
@@ -240,7 +242,7 @@ class MCTS():
                 if(training_count % storage_frequency == 0 or game == games+epoch): # store every x training times, or at last itteration.
                     # Decrease epsilon value.
                     # training count, is basicly epoch with tc = 1
-                    
+                    store_count += 1
                     #epsilon = epsilon/(training_count+1) # 
                     print("Storing network...")
                     self.rollout_policy.store(epoch=training_count, optimizer = optimizer, loss = loss, datapath=self.dataset.filepath)

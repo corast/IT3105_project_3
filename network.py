@@ -209,7 +209,8 @@ def HEX_CNN(name, dim, filepath=None):
         #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
         Flatten(),
         nn.Linear(75, target_dim),
-        nn.Softmax(dim=-1), name=name,input_type=2, filepath=filepath)
+        nn.Softmax(dim=-1), 
+        name=name,input_type=2, filepath=filepath)
 
 def HEX_CNN_L2(name, dim, filepath=None): 
     input_dim = (dim*dim*2)+2
@@ -220,7 +221,8 @@ def HEX_CNN_L2(name, dim, filepath=None):
         Flatten(),
         nn.Linear(75, 50),nn.ReLU(),
         nn.Linear(50, target_dim),nn.ReLU(),
-        nn.Softmax(dim=-1), name=name,input_type=2,filepath=filepath)
+        nn.Softmax(dim=-1), 
+        name=name,input_type=2,filepath=filepath)
 
 def NN_25(name, dim, filepath=None):
     input_dim = 1+(dim*dim) # PID + board
@@ -291,7 +293,7 @@ def train_architecture_testing():
     dataset_train = Datamanager.Datamanager("Data/training_tournament.csv",dim=5,limit=5000)
     dataset_test = Datamanager.Datamanager("Data/random_20000.csv",dim=5, limit=5000)
     #model = HEX_CNN(name="CNN-20000-3", dim=5)
-    model = NN_50(name="NN-25-train",dim=5)
+    model = NN_25(name="NN-25-train",dim=5)
     #model = HEX_CNN(name="CNN-SSE-ADAM", dim=5)
 #    HEX_CNN
     #model = NN_50(name="NN_50_15000",dim=5)
@@ -302,9 +304,9 @@ def train_architecture_testing():
     #print(model)
     #exit()
     # Create a model to train on. SGD<Adagrad<Adadelta<RMSprop<Adam<Adam+amsgrad
-    optimizer = optim.Adam(model.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6,amsgrad=False,weight_decay=0.0075) # 0.14, 0.18, 2: 0.10 ,0.133
+    #optimizer = optim.Adam(model.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6,amsgrad=False,weight_decay=0.0075) # 0.14, 0.18, 2: 0.10 ,0.133
     #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 4 ...
-    #optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test
+    optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test
     #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0) # 0.40 (0.45 train) 0.65 test
     print(optimizer)
     # wd: 0.01 -> 1.4 - 1.2 ; 0.001 -> 0.8 - 0.7; 0.0005 -> 0.55 - 0.30; 0.00075 -> 0.46 - 0.31 ;0.0001 -> 2.2 - 1.8
@@ -323,7 +325,7 @@ def train_architecture_testing():
     # 0.005 :0.5 - 0.42; 0.001: 0.6 - 0.5; 0.0025: 0.45 - 0.40
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.05, patience=20)
     for itt in range(300):# casemanager_test=dataset_test
-        loss_train = train(model,batch=30, iterations=10,
+        loss_train = train(model,batch=30, iterations=20,
         casemanager_train=dataset_train, optimizer = optimizer, loss_function=loss_function, verbose=200)
         #scheduler.step(loss_train)
         loss_test = 0

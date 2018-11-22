@@ -42,105 +42,17 @@ def check_integer(max):
             #setattr(args, self.dest, values)
     return customAction
 
+def check_bool(value):
+    print(type(value))
+    if(value == "True"):
+        return True
+    elif(value == "False"):
+        return False
+    raise ValueError("Not bool")
 
 def play_hex(dim): # TODO: init start player etc.
     return HEX(dim)
 
-def ANET_TEST(name, dim): # TODO FIX
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim
-    return network.Model(nn.Linear(input_dim, 100),nn.ReLU(),
-        nn.Linear(100,target_dim), nn.Softmax(dim=-1), name=name)
-
-def ANET_TEST_2(name, dim): # TODO FIX
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim
-    return network.Model(nn.Linear(input_dim, 80),nn.ReLU(),
-        nn.Linear(80, 40),nn.ReLU(),
-        nn.Linear(40,target_dim), nn.Softmax(dim=-1), name=name)
-    # K = filter_size, W = input height/leight, P padding, S stride
-    # zero-padding = (K-1)/2
-    # O = (W-K + 2P)/S + 1
-
-def HEX_CNN(name, dim,filepath=None): # Best so far..
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim 
-    input_type = 2
-    return network.Model(                                    # O = (5-3 +2) +1 = 5 
-        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
-        nn.ReLU(),
-        #nn.MaxPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
-        network.Flatten(),
-        nn.Linear(75, 25),
-        nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
-
-# ? HEX-CNN-20: Rmsprop, SSE loss
-
-def HEX_CNN_TWO(name, dim, filepath=None): 
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim 
-    input_type = 2
-    return network.Model(                                    # O = (5-3 +2) +1 = 5 
-        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
-        nn.ReLU(),
-        nn.AvgPool2d(kernel_size=(3,3),padding=1,stride=1), # -> 1,3,5,5
-        network.Flatten(),
-        nn.Linear(75, 25),
-        nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
-# ? HEX-CNN-TWO: 
-
-# CNN-MAX , ADAM, SSE
-def HEX_CNN_POOL(name, dim, filepath=None): 
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim 
-    input_type = 2
-    return network.Model(                                    # O = (5-3 +2) +1 = 5 
-        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
-        nn.ReLU(),
-        nn.MaxPool2d(kernel_size=(2,2),padding=1,stride=2), # -> 1,3,5,5
-        network.Flatten(),
-        nn.Linear(27, 25),
-        nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
-
-def HEX_CNN_L2(name, dim, filepath=None): 
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim 
-    input_type = 2
-    return network.Model(                                    # O = (5-3 +2) +1 = 5 
-        nn.Conv2d(3,3,kernel_size=(3,3),stride=1,padding=1), # -> 3*5*5 = 75 # 1,3,5,5 output
-        nn.ReLU(),
-        network.Flatten(),
-        nn.Linear(75, 50),nn.ReLU(),
-        nn.Linear(50, 25),nn.ReLU(),
-        nn.Softmax(dim=-1), name=name,input_type=input_type,filepath=filepath)
-
-def CUSTON_NET(name, dim):
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim
-    input_type = 1
-    model = network.Model(network.Flatten(),
-        nn.Linear(input_dim, 40),nn.ReLU(),
-        nn.Linear(40,target_dim), nn.Softmax(dim=-1))
-    return model
-
-def HEX_NET(name, dim):
-    input_type = 1
-    input_dim = (dim*dim*2)+2
-    target_dim = dim*dim
-    model = network.Model(
-        nn.Linear(input_dim, 70), nn.ReLU(),
-        nn.Linear(70,50), nn.ReLU(), 
-        nn.Linear(50,target_dim), nn.Softmax(dim=-1), name=name)
-    return model
-
-def HEX_NET_2(name):
-    input_dim = (args.dimentions*args.dimentions*2)+2
-    target_dim = args.dimentions*args.dimentions
-    model = network.Model(
-        nn.Linear(input_dim, 50), nn.ReLU(),
-        #nn.Linear(100,50), nn.ReLU(), 
-        nn.Linear(50,target_dim), nn.Softmax(dim=-1), name=name)
-    return model
 
 FUNCTION_MAP = {'NIM' : "play_nim",
                 'HEX' : play_hex}
@@ -171,7 +83,7 @@ if __name__=="__main__":
     subparsers = parser.add_subparsers(title="action", dest="sub_action",help="sub-game help"
                     ,required=True)
     parser_a = subparsers.add_parser("TRAIN")
-    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=2,
+    parser_a.add_argument("-i","--iterations",help="number times we iterate training data", default=4,
                     type=check_positive)
     parser_a.add_argument("-b","--batch_size",help="amount of data we train per iteration", default=30,
                     type=check_positive)
@@ -179,6 +91,7 @@ if __name__=="__main__":
                     type=check_positive)
     parser_a.add_argument("-tf","--training_frequency",help="how often we train, w.r.t games", default=1,
                     type=check_positive)
+    parser_a.add_argument("-gr","--greedy_rollout",help="if we use greedy ANET", default = True,type=check_bool)
     
     parser_a.add_argument("-ig","--init_games",help="number of games we init random data", default=0,
                     type=check_positive)
@@ -212,21 +125,26 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/buffer_NN_50_norm_tree.csv",dim=args.dimentions,limit=750)
+    datamanager = Datamanager("Data/buffer_NN-25-4-PB-RMSP-G.csv",dim=args.dimentions,limit=750)
     print(datamanager.filepath)
-    # ! HEX-CNN buffer_HEX_CNN
-    # ! HEX-CNN-L2 buffer_HEX_CNN-L2
+    # ! HEX-CNN buffer_HEX_CNN Adam
+    # ! HEX-CNN-L2 buffer_HEX_CNN-L2 Adam
 
-    # ! HEX-CNN buffer_HEX_CNN
-    # ! HEX-CNN-2 buffer_HEX_CNN_2
+    # ! HEX-CNN buffer_HEX_CNN Adam
+    # ! HEX-CNN-2 buffer_HEX_CNN_2 Adam
 
-    # ! NN-50-tanh-two buffer_NN_50_tanh_two 3000 sims
-    # ! NN-50-tanh buffer_NN_50_tanh
-    # ! NN-25 buffer_NN_25
+    # ! NN-50-tanh-two buffer_NN_50_tanh_two 3000 sims Adam
+    # ! NN-50-tanh buffer_NN_50_tanh Adam nongreed
+    # ! NN-25 buffer_NN_25 -s 5000 Epsilon = 0.5 Adam nongree
     
-    # ! NN_50_norm buffer_NN_50_norm_tree.csv
+    # ! NN_50_norm buffer_NN_50_norm_tree.csv -s 5000 Epsilon = 0.5 Adam nongree
 
-    # ! NN-25-7 buffer_NN_25_7
+    # ! NN-25 buffer_NN_25 -s 5000 (-200 pr storage) , Eps = 0.5 , 4 itt, batch 30 Adam nongreed
+    # ! NN-25-20 buffer_nn_25 -s 5000 (-200 pr storage), eps = 0.5 , 20 its, batch 30 Adam Nongreed
+    # ! NN-25-20-WB buffer_nn_25_WB -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 Adam Nongree
+    # ! NN-25-20-PB buffer_nn-25-PB-RMSP -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 RMSP Nongreed
+    # ! NN-25-20-PB-G buffer_nn-25-PB-RMSP-G -s 5000 (-100 pr storage), eps = 0.5, 20 its, batch 30 RMSP greed 750 buffer
+    # ! NN-25-4-PG-G buffer_NN-25-4-PG-G-RMSP -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 30 RMSP greed 750 buffer
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
@@ -234,9 +152,9 @@ if __name__=="__main__":
             
             #rollout_policy = network.HEX_CNN("HEX-CNN-2",args.dimentions) # Use default values
             #rollout_policy = network.HEX_CNN_L2("NN-50",args.dimentions) # Use default values
-            #rollout_policy = network.NN_25("NN-25",args.dimentions) # Use default values
+            rollout_policy = network.NN_25("NN-25-4-PB-RMSP-G",args.dimentions) # Use default values
             #rollout_policy = network.NN_50("NN-50-tanh-two",args.dimentions) # Use default values
-            rollout_policy = network.NN_50_norm("NN-50-norm", args.dimentions)
+            #rollout_policy = network.NN_50_norm("NN-50-norm", args.dimentions)
             #rollout_policy.apply(network.weights_init) # init weights and biases.
             print("Network", rollout_policy,"input-type", rollout_policy.input_type)
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
@@ -247,8 +165,9 @@ if __name__=="__main__":
             #loss_function = pyloss.MSELoss()
 
             #TODO: handle continue training from file.
+            greedy = args.greedy_rollout
             mcts = MCTS(node=root, dataset=datamanager,
-                time_limit=args.time_limit, rollout_policy=rollout_policy)
+                time_limit=args.time_limit, rollout_policy=rollout_policy,greedy=greedy)
         else:
             mcts = MCTS(node=root, dataset=datamanager, 
                 time_limit=args.time_limit) 
@@ -267,7 +186,8 @@ if __name__=="__main__":
             epoch = 0 # rollout_policy
             # * OPTIMIZERS
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
-            optimizer = optim.Adam(rollout_policy.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6)
+            optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
+            #optimizer = optim.Adam(rollout_policy.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6)
             #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 
             #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0)
             # * LOSS FUNCTIONS
