@@ -154,14 +154,15 @@ class MCTS():
         # Player turn should be P.
         # We need to create new games of nim for each starting player.
 
-    def play_batch_with_training(self, optimizer, loss_function, games, training_frequency, storage_frequency, num_sims, init_data_games=0, data_sims = 0, epoch=0, start_player=1, iterations=10, batch=30, init_train=False): # * Function to train for each batch.
+    def play_batch_with_training(self, optimizer, loss_function, games, training_frequency, storage_frequency, num_sims,
+     init_data_games=0, data_sims = 0, epoch=0, start_player=3, iterations=10, batch=30, init_train=False): # * Function to train for each batch.
         # batch_size is number of games we play, num_sims is seconds we simulate for each move.
         # storage_frequency is how often we save an agent. training_frequency is how many games between training.
         # If batch is 1, we train after each game, otherwise we choose.
         # We also don't want to start training until buffer is filled with random data.
         if(start_player < 1 or start_player > 3):
             raise ValueError('Value of {} as P is not supported'.format(start_player))
-
+        datamanager_test = Datamanager("Data/random_20000.csv") # Examples with alot of rollout, to compare progress.
         # fill buffer using random rollout, since this is better than untrained network.
         size = self.dataset.get_buffer_size()
         # If size != 0, it means we don't train from scratch.
@@ -176,12 +177,11 @@ class MCTS():
             # We want to train policy on data we have in buffer, atleast a little bit.
             dataset_test = Datamanager("Data/data_r_test.csv",dim=5)
             print("Pretraining on {} with test {}".format(self.dataset.filepath, dataset_test.filepath))
-            #exit()
             init_optimizer = torch.optim.RMSprop(self.rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             #init_optimizer = copy.copy(optimizer) # Don't want to change params on self training optimizer.
             init_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(init_optimizer, 'min')
             for itt in range(1,200+1): # 10 itterations, batch 50
-                loss_train,loss_test = network.train(self.rollout_policy,batch=50, iterations=10,
+                loss_train,loss_test = network.train(self.rollout_policy,batch=batch, iterations=iterations,
                 casemanager_train=self.dataset,casemanager_test=dataset_test, optimizer = init_optimizer,loss_function=loss_function,verbose=100)
                 init_scheduler.step(loss_test)  
                 print("pre_itteration {}  loss_train: {:.9f} loss_train: {:.9f} lr: {} ".format(itt, loss_train,loss_test, optimizer.param_groups[0]["lr"]))
@@ -195,27 +195,28 @@ class MCTS():
 
         if(variables.verbose > variables.play):
             print("Start training with self play using policy network")
-        datamanager_test = Datamanager("Data/random_20000.csv") # Expert knowledge.
+        
         training_count = epoch # Count number of times we have trained, to easily check if needing to store.
         #loss_history = [] # Store previous losses
         #scheduler = torch.optim.lr_scheduler(optimizer,step_size = 30, )
         #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.05) # decrease by a bit
         #97,5 90, 80, 60
         #1/version 
+        ### *** Epsilon
         decrease = 0.025 # For each training dercrease by 5
-        epsilon = max(0,0.525-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
-
+        #epsilon = max(0,0.525-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
+        epsilon = 0.5
         for game in range(1+epoch, games + 1 + epoch): # number of games we play
             print("Game {}".format(game))
             sim_node = copy.deepcopy(self.root) # Copy root state of game. # So that we have a starting point to simulate from.
             sim_node.game.init_player_turn(start_player) # Change who begins in a given game state
             # * Play game
             
-            #TODO: change num_sims troughout 
-            num_rollouts = max(600, int(num_sims*(epsilon+epsilon))) # We want to have alot of rollouts to begin with, and decrease these as we play
+            ## *** Rollouts
+            #num_rollouts = max(800, int(num_sims*(epsilon+epsilon))) # We want to have alot of rollouts to begin with, and decrease these as we play
             # epsilon = 0.3 -> 3000*0.6 = 1800 etc.
-            print("Using epsilon",epsilon, "training_count", training_count, "rollouts", num_rollouts)
-            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_rollouts, epsilon=epsilon) # get last state of game. # Testing
+            print("Using epsilon",epsilon, "training_count", training_count, "on", self.rollout_policy.name)
+            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims, epsilon=epsilon) # get last state of game. # Testing
             
             # Check winner.
             if(game % training_frequency == 0): # We want to train between every game?
@@ -231,7 +232,8 @@ class MCTS():
                 #print(optimizer.param_groups[0]["lr"])
                 # collect the last x losses from history.
                 training_count += 1 # update training count
-                epsilon = max(0,0.525-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
+                #epsilon = max(0,0.525-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
+                
                 #if(epsilon <= 0): # Don't want to decrease learning rate until we remove random rollout.
                     #scheduler.step(loss) # If loss stagnates over 10 games, we need to decrease it.
                 # Check if we want to store this trained policy network. 

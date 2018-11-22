@@ -37,6 +37,7 @@ class Actor():
                 board_input = misc.get_cnn_input(pid,[board_state],dim)
             elif(self.input_type == 3):
                 board_input = misc.get_normal_2(pid, board_state)
+
             if(type(board_input) == list):
                 #print("LIST IN GET_ACTION")
                 board_input = torch.FloatTensor(board_state)
@@ -71,6 +72,7 @@ def tournament(game:Game, models=[], random=False, games=10): # We need to load 
     # Every play against every one else.
     #games = len(actors)*len(actors)
 
+
     perms = permutations(actors,2) 
     results = []
     for first, second in perms:
@@ -81,6 +83,7 @@ def tournament(game:Game, models=[], random=False, games=10): # We need to load 
             wins[result-1] += 1  # 1-1 = 0, 2-1 = 1
         results.append(wins)
     
+    print(results) 
     # TODO: create an matrix of the scores.
 
     print("  First        Second   Score")

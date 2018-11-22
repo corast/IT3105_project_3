@@ -177,8 +177,8 @@ class Node():
         game_finished = self.is_termal_node()
         while not game_finished: # 
             if(anet is not None and epsilon <= np.random.rand(1)):# Epsilon 1 -> random only, epsilon 0.2 , 80% chance we use network
-                if(0.5 <= np.random.rand(1) and epsilon == 0): # 50 % chance of using stochastic weightening.
-                    greedy = False
+                #if(0.5 <= np.random.rand(1) and epsilon == 0): # 50 % chance of using stochastic weightening.
+                #    greedy = False
                 action = self.rollout_policy_network(rollout_state, anet, greedy=greedy)
             else: #we want to use this rollout_policy instead, assume it is an network.
                 possible_moves = rollout_state.get_actions() # Return legal actions.

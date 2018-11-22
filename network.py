@@ -18,14 +18,6 @@ import Datamanager
 import misc
 #import controller as controller
 
-#class _Loss(Module):
-#    def __init__(self, size_average=None, reduce=None, reduction='elementwise_mean'):
-#        super(_Loss, self).__init__()
-#        if size_average is not None or reduce is not None:
-#            self.reduction = _Reduction.legacy_get_string(size_average, reduce)
-#        else:
-#            self.reduction = reduction
-
 class MultiClassCrossEntropyLoss(_Loss):
     def forward(self, input, target):
         loss = -torch.mean(torch.sum(torch.sum(torch.sum(target*torch.log(input), dim=-1), dim=-1), dim=-1))
@@ -203,6 +195,10 @@ optimizer = optim.Adam(model.parameters(),
 #loss_function = nn.NLLLoss()
 #criterion = nn.CrossEntropyLoss()
 
+# activations: 
+#nn.ReLU,
+#nn.Tanh
+
 #checkpoint = torch.load(checkpoint_path)
 def HEX_CNN(name, dim, filepath=None):
     input_dim = (dim*dim*2)+2
@@ -230,7 +226,7 @@ def NN_25(name, dim, filepath=None):
     input_dim = 1+(dim*dim) # PID + board
     target_dim = dim*dim
     return Model(
-        nn.Linear(input_dim, 25),nn.Sigmoid(), # Relu will lose player 2 info
+        nn.Linear(input_dim, 25),nn.Tanh(), # Relu will lose player 2 info
         nn.Linear(25,target_dim), nn.Softmax(dim=-1),
         name=name, 
         filepath=filepath,
@@ -241,19 +237,30 @@ def NN_50(name, dim, filepath=None):
     input_dim = 1+(dim*dim) # PID + board
     target_dim = dim*dim
     return Model(
-        nn.Linear(input_dim, 50),nn.Sigmoid(), # Relu will lose player 2 info
+        nn.Linear(input_dim, 50),nn.Tanh(), # Relu will lose player 2 info
         nn.Linear(50,target_dim), nn.Softmax(dim=-1),
         name=name, 
         filepath=filepath,
         input_type=3
     )
 
+def NN_50_norm(name, dim, filepath=None):
+    input_dim = 2+(dim*dim*2) # PID + board
+    target_dim = dim*dim
+    return Model(
+        nn.Linear(input_dim, 50),nn.ReLU(), # Relu will lose player 2 info
+        nn.Linear(50,target_dim), nn.Softmax(dim=-1),
+        name=name, 
+        filepath=filepath,
+        input_type=1
+    )
+
 def NN_90_50(name, dim, filepath=None):
     input_dim = 1+(dim*dim) # PID + board
     target_dim = dim*dim
     return Model(
-        nn.Linear(input_dim, 90),nn.Sigmoid(), # Relu will lose player 2 info
-        nn.Linear(90, 50),nn.Sigmoid(),
+        nn.Linear(input_dim, 90), nn.Sigmoid(), # Relu will lose player 2 info
+        nn.Linear(90, 50), nn.Sigmoid(),
         nn.Linear(90,target_dim), nn.Softmax(dim=-1),
         name=name, 
         filepath=filepath,
@@ -274,13 +281,17 @@ def NN_CUSTOM(name, dim,input_type=1): # filepath if we want to load prev models
 
 # ! CNN-20000-3 is the bot which played in the tournament.
 
+# Tourn: optim.Adam(model.parameters(), lr=0.0025,betas=(0.9,0.999),eps=1e-6,amsgrad=True,weight_decay=0.0075)
+# batch-40, itt-20
+
 def train_architecture_testing():
     #torch.manual_seed(999) # set seeds
     #np.random.seed(999)
     #Load datamanager for both files.
     dataset_train = Datamanager.Datamanager("Data/training_tournament.csv",dim=5,limit=5000)
     dataset_test = Datamanager.Datamanager("Data/random_20000.csv",dim=5, limit=5000)
-    model = HEX_CNN(name="CNN-20000-3", dim=5)
+    #model = HEX_CNN(name="CNN-20000-3", dim=5)
+    model = NN_50(name="NN-25-train",dim=5)
     #model = HEX_CNN(name="CNN-SSE-ADAM", dim=5)
 #    HEX_CNN
     #model = NN_50(name="NN_50_15000",dim=5)
@@ -291,7 +302,7 @@ def train_architecture_testing():
     #print(model)
     #exit()
     # Create a model to train on. SGD<Adagrad<Adadelta<RMSprop<Adam<Adam+amsgrad
-    optimizer = optim.Adam(model.parameters(), lr=0.0025,betas=(0.9,0.999),eps=1e-6,amsgrad=True,weight_decay=0.0075) # 0.14, 0.18, 2: 0.10 ,0.133
+    optimizer = optim.Adam(model.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6,amsgrad=False,weight_decay=0.0075) # 0.14, 0.18, 2: 0.10 ,0.133
     #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 4 ...
     #optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test
     #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0) # 0.40 (0.45 train) 0.65 test
@@ -311,13 +322,13 @@ def train_architecture_testing():
     #loss_function = RootMeanSquareLoss()
     # 0.005 :0.5 - 0.42; 0.001: 0.6 - 0.5; 0.0025: 0.45 - 0.40
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.05, patience=20)
-    for itt in range(1500):# casemanager_test=dataset_test
-        loss_train = train(model,batch=40, iterations=20,
+    for itt in range(300):# casemanager_test=dataset_test
+        loss_train = train(model,batch=30, iterations=10,
         casemanager_train=dataset_train, optimizer = optimizer, loss_function=loss_function, verbose=200)
         #scheduler.step(loss_train)
         loss_test = 0
         print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} lr:{}".format(itt, loss_train,loss_test ,optimizer.param_groups[0]["lr"]))
         #print(optimizer["lr"])
-    model.store(epoch=1000, optimizer = optimizer, loss = loss_train)
+    #model.store(epoch=1000, optimizer = optimizer, loss = loss_train)
 
 #train_architecture_testing()
