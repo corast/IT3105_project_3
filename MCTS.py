@@ -224,9 +224,9 @@ class MCTS():
             if(game % training_frequency == 0): # We want to train between every game?
                 loss = network.train(self.rollout_policy,casemanager_train=self.dataset, optimizer=optimizer, 
                 loss_function=loss_function, iterations=iterations,batch=batch)
-                if(self.root.game.get_dimentions()[0] == 5):
+                if(self.root.game.get_dimentions()[0] == 5): # * IF we are using a 5x5 board, we can check against alot of rollout data.
                     loss_test = network.evaluate_test(casemanager = datamanager_test,model=self.rollout_policy, 
-                    loss_function= loss_function,batch_size=batch)
+                    loss_function= loss_function,batch_size="all")
                 else:
                     loss_test = 0000.0000
                 print("Epoch {} loss {:.8f} loss_test {:.8f} lr:{}".format(game, loss,loss_test,optimizer.param_groups[0]["lr"]))

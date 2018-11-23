@@ -177,13 +177,10 @@ def train_batch(casemanager:Datamanager, model, optimizer, loss_function, batch)
 
 def evaluate_test(casemanager:Datamanager, model, loss_function, batch_size):
     # batch_size = "all" is everything 
-    print(casemanager.dim, casemanager, "bs",batch_size)
     model.eval() # Change behaviour of some layers, like no dropout etc.
     with torch.no_grad(): # Turn off gradient calculation requirements, faster.
         data, target = casemanager.return_batch(batch_size, model.input_type) # We might need to resize.
         prediction = model(data)
-        print(data.shape)
-        print(target.shape)
         return loss_function(prediction,target).item() # Get loss value.
 
 def save_checkpoint(state, filename="models/checkpoint.pth.tar"): #Save as .tar file
@@ -294,29 +291,28 @@ def NN_CUSTOM(name, dim,input_type=1): # filepath if we want to load prev models
 # Tourn: optim.Adam(model.parameters(), lr=0.0025,betas=(0.9,0.999),eps=1e-6,amsgrad=True,weight_decay=0.0075)
 # batch-40, itt-20
 
-def train_architecture_testing():
+def train_architecture_testing(): # * Just making sure the networks actually do what their suppose to
     #torch.manual_seed(999) # set seeds
     #np.random.seed(999)
     #Load datamanager for both files.
     dataset_train = Datamanager.Datamanager("Data/training_tournament.csv",dim=5,limit=5000)
     dataset_test = Datamanager.Datamanager("Data/random_20000.csv",dim=5, limit=5000)
     #model = HEX_CNN(name="CNN-20000-3", dim=5)
-    model = NN_25(name="NN-25-train",dim=5)
-    #model = HEX_CNN(name="CNN-SSE-ADAM", dim=5)
+    
+    #model= HEX_CNN(name="CNN-2000-3",dim=5,filepath="models/CNN-20000-3/CNN-20000-3_1000")
+    model = HEX_CNN(name="CNN-SSE-ADAM", dim=5)
 #    HEX_CNN
     #model = NN_50(name="NN_50_15000",dim=5)
-    model.apply(weights_init)
+    #model.apply(weights_init)
     #model = Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod")
     #model =  Model(nn.Conv1d(50,52,kernel_size=4,stride=1,padding=1),nn.ReLU(),nn.MaxPool1d(kernel_size=4, stride=2, padding=1), nn.Linear(50,25) ,nn.Softmax(dim=-1), name="rms_mod")
     # Dimentions: 52 -> 100, maxpol: 100 -> 
     #print(model)
-    #exit()
     # Create a model to train on. SGD<Adagrad<Adadelta<RMSprop<Adam<Adam+amsgrad
-    #optimizer = optim.Adam(model.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6,amsgrad=False,weight_decay=0.0075) # 0.14, 0.18, 2: 0.10 ,0.133
+    optimizer = optim.Adam(model.parameters(), lr=0.0025,betas=(0.9,0.999),eps=1e-6,amsgrad=True,weight_decay=0.0075) # 0.14, 0.18, 2: 0.10 ,0.133
     #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 4 ...
-    optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test
+    #optimizer = optim.RMSprop(model.parameters(), lr=0.005,alpha=0.99,eps=1e-8) # 0.10 , 0.12 test
     #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0) # 0.40 (0.45 train) 0.65 test
-    print(optimizer)
     # wd: 0.01 -> 1.4 - 1.2 ; 0.001 -> 0.8 - 0.7; 0.0005 -> 0.55 - 0.30; 0.00075 -> 0.46 - 0.31 ;0.0001 -> 2.2 - 1.8
     # Adam: 2 - 1.3: 8.6 ; CNN-L2-SSE - RMSPROP-wd(0.005)lr(0.005): 0.8-0.6
     # ADAM: CNN-L2-SSE-ADAM: 1.8:9
@@ -332,13 +328,17 @@ def train_architecture_testing():
     #loss_function = RootMeanSquareLoss()
     # 0.005 :0.5 - 0.42; 0.001: 0.6 - 0.5; 0.0025: 0.45 - 0.40
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.05, patience=20)
-    for itt in range(300):# casemanager_test=dataset_test
-        loss_train = train(model,batch=30, iterations=20,
+    loss = evaluate_test(dataset_test, model,loss_function=loss_function,batch_size="all")
+    print(loss)
+    
+    for itt in range(30):# casemanager_test=dataset_test
+        loss_train = train(model,batch=50, iterations=50,
         casemanager_train=dataset_train, optimizer = optimizer, loss_function=loss_function, verbose=200)
         #scheduler.step(loss_train)
         loss_test = 0
         print("itteration {}  loss_train: {:.8f} loss_test: {:.8f} lr:{}".format(itt, loss_train,loss_test ,optimizer.param_groups[0]["lr"]))
         #print(optimizer["lr"])
-    #model.store(epoch=1000, optimizer = optimizer, loss = loss_train)
+    loss = evaluate_test(dataset_test, model,loss_function=loss_function,batch_size="all")
+    print(loss)
 
 #train_architecture_testing()

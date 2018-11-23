@@ -151,12 +151,13 @@ if __name__=="__main__":
 
     # ! NN-25  buffer_NN_25 -s 5000 (-200 pr storage) , Eps = 0.5 , 4 itt, batch 30 Adam nongreed
     # ! NN-25-20  buffer_nn_25 -s 5000 (-200 pr storage), eps = 0.5 , 20 its, batch 30 Adam Nongreed
-    # ! NN-25-20-WB  buffer_nn_25_WB -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 Adam Nongree ? TOPP kandidat.  O   T
+    # ! NN-25-20-WB  buffer_nn_25_WB -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 Adam Greed ? TOPP kandidat.  O   T
     # ! NN-25-20-PB  buffer_nn-25-PB-RMSP -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 RMSP Nongreed
     # ! NN-25-20-PB-G  buffer_nn-25-PB-RMSP-G -s 5000 (-100 pr storage), eps = 0.5, 20 its, batch 30 RMSP greed 750 buffer
     # ! NN-25-4-PG-G  buffer_NN-25-4-PG-G-RMSP -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 30 RMSP greed 750 buffer O   T
 
-    
+    # * NN-25-100-PG-G  buffer_NN-25-100-PG-G -s 5000 (-100 pr storage), eps = 0.5, 50 its, batch 50 RMSP greed 750 buffer O   T
+
     # ! HEX-CNN buffer_HEX_CNN  3k sim
     # ! HEX-CNN-2 buffer_HEX_CNN_2 4k sim# pre-loaded
     # ! HEX-CNN-3 buffer_HEX_CNN_3 4k sim# pre-loaded + many itterations training.
@@ -180,11 +181,7 @@ if __name__=="__main__":
     # ! HEX-CNN-3  buffer_HEX_CNN_3 4k sim# pre-loaded + many itterations training.
     # ! HEX-CNN-4  buffer_HEX_CNN_4 # pre-loaded + only greedy after epsilon.
 
-<<<<<<< HEAD
-    datamanager = Datamanager("Data/buffer_NN-25-5-d6.csv",dim=args.dimentions,limit=750)
-=======
-    datamanager = Datamanager("Data/buffer_NN-50-PG-2-G.csv",dim=args.dimentions,limit=750)
->>>>>>> 82ceeabc2d13af4f6a4a1ab2761e7b7efb386f2b
+    datamanager = Datamanager("Data/buffer_NN-25-100-PG-G.csv",dim=args.dimentions,limit=750)
     print(datamanager.filepath)
     if(game is not None):
         root = Node(game) # Init root node from game state.
@@ -193,7 +190,7 @@ if __name__=="__main__":
             
             #rollout_policy = network.HEX_CNN("HEX-CNN-2",args.dimentions) # Use default values
             #rollout_policy = network.HEX_CNN_L2("NN-50",args.dimentions) # Use default values
-            rollout_policy = network.NN_25("NN-25-5-d6",dim=args.dimentions) # Use default values
+            rollout_policy = network.NN_25("NN-25-100-PG-G",dim=args.dimentions) # Use default values
             #rollout_policy = network.NN_50("NN-50-tanh-two",args.dimentions) # Use default values
             #rollout_policy = network.NN_50_norm("NN-50-norm", args.dimentions)
             #rollout_policy.apply(network.weights_init) # init weights and biases.
@@ -228,7 +225,7 @@ if __name__=="__main__":
             # * OPTIMIZERS
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.001,alpha=0.99,eps=1e-8)
-            optimizer = optim.Adam(rollout_policy.parameters(), lr=0.0005,betas=(0.9,0.999),eps=1e-6)
+            optimizer = optim.Adam(rollout_policy.parameters(), lr=0.005,betas=(0.9,0.999),eps=1e-6)
             #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 
             #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0)
             # * LOSS FUNCTIONS
@@ -263,25 +260,26 @@ if __name__=="__main__":
                 models = []
                 for path in misc.find_models(model_path):
                     name = "v"+path.split("_")[-1] # vEpoch
-                    model = network.NN_25(name,args.dimentions, filepath=path)
+                    model = network.NN_25(name,args.dimentions, filepath=path) # ! Change accordingly
                     models.append(model)
                 actor.tournament(game,models,games=topp_games, random=args.random)
             else:
                 # manual innput
             #Model path should be same name as path..
-                #model = HEX_CNN("E-HEX-CNN",5)
-    
-                model_1 = network.HEX_CNN(name="v1", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_1")
-                #print(model_1.parameters().data)
-                model_2 = network.HEX_CNN(name="v50", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_50")
-                model_3 = network.HEX_CNN(name="v100", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_100")
-                model_4 = network.HEX_CNN(name="v140", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_140")
-                #model_50 = network.HEX_CNN(name="HEX-CNN-POOL-50", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_50")
-                #model_80 = HEX_CNN_TWO(name="HEX-CNN-POOL-80", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_80")
-                #model_120 = HEX_CNN_TWO(name="HEX-CNN-POOL-120", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_120")
-                models = [model_1,model_2,model_3,model_4]
+                model_1= network.HEX_CNN(name="CNN-2000",dim=5,filepath="models/CNN-20000-3/CNN-20000-3_1000")
+                model_2 = network.NN_25(name="v1",dim=5, filepath="models/NN-25-20-WB-TOPP/NN-25-20-WB-TOPP_1")
+                model_3 = network.NN_25(name="v30",dim=5, filepath="models/NN-25-20-WB-TOPP/NN-25-20-WB-TOPP_30")
+                model_4 = network.NN_25(name="v60",dim=5, filepath="models/NN-25-20-WB-TOPP/NN-25-20-WB-TOPP_60")
+                model_5 = network.NN_25(name="v90",dim=5, filepath="models/NN-25-20-WB-TOPP/NN-25-20-WB-TOPP_90")
+                model_6 = network.NN_25(name="v120",dim=5, filepath="models/NN-25-20-WB-TOPP/NN-25-20-WB-TOPP_120")
+                model_7 = network.NN_25(name="v150",dim=5, filepath="models/NN-25-20-WB-TOPP/NN-25-20-WB-TOPP_150")
+                model_8 = network.NN_25(name="v190",dim=5, filepath="models/NN-25-20-WB-TOPP/NN-25-20-WB-TOPP_190")
+                model_9 = network.NN_25(name="v220",dim=5, filepath="models/NN-25-20-WB-TOPP/NN-25-20-WB-TOPP_220")
+                model_10 = network.NN_25(name="v250",dim=5, filepath="models/NN-25-20-WB-TOPP/NN-25-20-WB-TOPP_250")
+
+                models = [model_1,model_2,model_3,model_4,model_5,model_6,model_7,model_8,model_9,model_10]
                 #actors = [actor.Actor(model_1),actor.Actor(model_20),actor.Actor(model_50),actor.Actor(model_80),actor.Actor(model_120)]
-                actor.tournament(game,models,games=topp_games)
+                actor.tournament(game,models,games=topp_games, random=True)
             pass
         elif(args.sub_action == "DATA"):
             mcts.gather_data = True # need to specificly set this.

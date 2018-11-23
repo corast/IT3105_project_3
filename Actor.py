@@ -11,6 +11,7 @@ import HEX
 from itertools import permutations 
 import copy
 import variables
+import time
 
 #TODO Names
 class Actor():
@@ -108,6 +109,8 @@ def play_game(game:Game,first:Actor, second:Actor, input_type=1):
     # Need to switch between which actor is playing
     count = 0
     game_finished = game.get_winner()
+    if(variables.verbose >= variables.play):
+        print("#### Player 1", first.name, " vs Player 2", second.name)
     while game_finished is None: # play until game is over.
         board_state = game.get_state_as_input() # Get board state. # simple dim*dim array with 0,1 and 2's
         PID = [game.get_current_player()]
@@ -125,6 +128,7 @@ def play_game(game:Game,first:Actor, second:Actor, input_type=1):
         if(variables.verbose >= variables.play):
             game.display_turn(action) # Display what happened to get to this state.
             game.display_board()
+            time.sleep(1)
         #game_finished = game.get_winner()
         count += 1
     return game.get_winner()
