@@ -93,7 +93,7 @@ class Node():
                 action = child.action # Should be a touple for HEX.
                 visits = child.num_visits # What we want to store.
                 data_visits[action[0]*dimention[0]+action[1]] = visits
-                
+            # ! Remove before demo...    
             print(data_visits)
             player = [self.game.get_current_player()]
             #PID = misc.int_to_binary_rev(self.game.get_current_player(),size=2)
@@ -156,16 +156,19 @@ class Node():
             possible_moves = rollout_state.get_actions() # Return legal actions.
             return self.rollout_policy_random(possible_moves)
 
+        dims = self.game.get_dimentions()# (x,y)
+        dim = dims[0]# (x)
+
         # Select with coresponding value.
         if(greedy):
         # greedily select best action.
-            action = np.unravel_index(np.argmax(actions),(5,5))
+            action = np.unravel_index(np.argmax(actions),dims)
             return action
         else:
             # Stochasticly almost select the best action with weights.
             actions = actions.ravel().tolist()
             stochastich_weights = misc.normalize_array(actions)
-            action = np.unravel_index(np.random.choice(range(5*5),p=stochastich_weights),(5,5)) # Return best action with it's probability, or explore other children instead.
+            action = np.unravel_index(np.random.choice(range(dim*dim),p=stochastich_weights),dims) # Return best action with it's probability, or explore other children instead.
             return action
         # ! Handle illegal action from untrained network.
     def rollout_policy_random(self, actions): # Allows us to change policy if needed

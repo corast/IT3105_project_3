@@ -156,14 +156,14 @@ class MCTS():
         # We need to create new games of nim for each starting player.
 
     def play_batch_with_training(self, optimizer, loss_function, games, training_frequency, storage_frequency, num_sims,
-     init_data_games=0, data_sims = 0, epoch=0, start_player=3, iterations=10, batch=30, init_train=False): # * Function to train for each batch.
+     init_data_games=0, data_sims = 0, epoch=0, start_player=3, iterations=10, batch=30, init_train=False, epsilon=0.5): # * Function to train for each batch.
         # batch_size is number of games we play, num_sims is seconds we simulate for each move.
         # storage_frequency is how often we save an agent. training_frequency is how many games between training.
         # If batch is 1, we train after each game, otherwise we choose.
         # We also don't want to start training until buffer is filled with random data.
         if(start_player < 1 or start_player > 3):
             raise ValueError('Value of {} as P is not supported'.format(start_player))
-        datamanager_test = Datamanager("Data/random_20000.csv") # Examples with alot of rollout, to compare progress.
+        datamanager_test = Datamanager("Data/random_20000.csv",dim=self.root.game.get_dimentions()[0]) # Examples with alot of rollout, to compare progress.
         # fill buffer using random rollout, since this is better than untrained network.
         size = self.dataset.get_buffer_size()
         # If size != 0, it means we don't train from scratch.
@@ -199,48 +199,45 @@ class MCTS():
         
         training_count = epoch # Count number of times we have trained, to easily check if needing to store.
         store_count = int(training_count / storage_frequency) # Need to know how many times it divides
-        #loss_history = [] # Store previous losses
         #scheduler = torch.optim.lr_scheduler(optimizer,step_size = 30, )
         #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.05) # decrease by a bit
-        #97,5 90, 80, 60
-        #1/version 
+
         ### *** Epsilon
         decrease = 0.025 # For each training dercrease by 5
         #epsilon = max(0,0.525-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
-        epsilon = 0.5
+        epsilon = epsilon
         for game in range(1+epoch, games + 1 + epoch): # number of games we play
             print("Game {}".format(game))
             sim_node = copy.deepcopy(self.root) # Copy root state of game. # So that we have a starting point to simulate from.
             sim_node.game.init_player_turn(start_player) # Change who begins in a given game state randomly
-            # * Play game
+            
             
             ## *** Rollouts # Need to decrease num_sims as we store a agent.
             num_rollouts = max(800, int(num_sims-200*store_count)) # We want to have alot of rollouts to begin with, and decrease these as we play
-            # epsilon = 0.3 -> 3000*0.6 = 1800 etc.
-            print("Using epsilon",epsilon, "training_count", training_count, "on", self.rollout_policy.name)
-            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_sims, epsilon=epsilon) # get last state of game. # Testing
+
+            # * Play game
+            print("Using epsilon",epsilon, "training_count", training_count, "on", self.rollout_policy.name, " sims: ", num_rollouts )
+            sim_node = self.play_full_game(root_node=sim_node, num_sims=num_rollouts, epsilon=epsilon) # get last state of game. # Testing
+
+            # TODO: penalty from not winning as first player + penalty from very long games
             
-            # Check winner.
             if(game % training_frequency == 0): # We want to train between every game?
-                #We train.
                 loss = network.train(self.rollout_policy,casemanager_train=self.dataset, optimizer=optimizer, 
                 loss_function=loss_function, iterations=iterations,batch=batch)
-
-                loss_test = network.evaluate_test(casemanager = datamanager_test,model=self.rollout_policy, 
-                loss_function= loss_function,batch_size=batch)
+                if(self.root.game.get_dimentions()[0] == 5):
+                    loss_test = network.evaluate_test(casemanager = datamanager_test,model=self.rollout_policy, 
+                    loss_function= loss_function,batch_size=batch)
+                else:
+                    loss_test = 0000.0000
                 print("Epoch {} loss {:.8f} loss_test {:.8f} lr:{}".format(game, loss,loss_test,optimizer.param_groups[0]["lr"]))
-                #loss_history.append(loss) # Add current loss to history.
                 
-                #print(optimizer.param_groups[0]["lr"])
                 # collect the last x losses from history.
                 training_count += 1 # update training count
                 #epsilon = max(0,0.525-training_count*decrease) # 4 * 0.025 = 0.10, 10 * 0.025 = 0.25; 20 *0.025 =0.5, 40*0.025 = 1
                 
                 #if(epsilon <= 0): # Don't want to decrease learning rate until we remove random rollout.
-                    #scheduler.step(loss) # If loss stagnates over 10 games, we need to decrease it.
-                # Check if we want to store this trained policy network. 
-                if(training_count % storage_frequency == 0 or game == games+epoch): # store every x training times, or at last itteration.
-                    # Decrease epsilon value.
+                    #scheduler.step(loss) # If loss stagnates over 10 games, we need to decrease it. 
+                if(training_count % storage_frequency == 0 or game == games+epoch): # * store every x training times, or at last itteration.
                     # training count, is basicly epoch with tc = 1
                     store_count += 1
                     #epsilon = epsilon/(training_count+1) # 

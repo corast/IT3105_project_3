@@ -50,6 +50,14 @@ def check_bool(value):
         return False
     raise ValueError("Not bool")
 
+def check_float(value):
+    value = float(value)
+    if(value > 1  or value < 0):
+        raise ValueError ("Epsilon can't be larger than 1 or smaller than 0 :",value )
+    else:
+        return value
+
+
 def play_hex(dim): # TODO: init start player etc.
     return HEX(dim)
 
@@ -68,7 +76,7 @@ if __name__=="__main__":
     parser.add_argument("-s","--num_sims", default=600, type=check_positive)
     parser.add_argument("-p","--start_player", default=3,choices=[1,2,3],
                         type=check_positive)
-    parser.add_argument("-g","--games",help="number of games we play", default=1,
+    parser.add_argument("-g","--games",help="number of games we play", default=200,
                     type=check_positive)
     """parser.add_argument("-a","--action", choices=["train","play","play_tourn","test","data"],
                         required=True, type=str)  """
@@ -92,6 +100,9 @@ if __name__=="__main__":
     parser_a.add_argument("-tf","--training_frequency",help="how often we train, w.r.t games", default=1,
                     type=check_positive)
     parser_a.add_argument("-gr","--greedy_rollout",help="if we use greedy ANET", default = True,type=check_bool)
+
+    parser_a.add_argument("-ep","--epsilon", help="prob of selecting random rollout", default = 0.5, type=check_float,
+    required=False)
     
     parser_a.add_argument("-ig","--init_games",help="number of games we init random data", default=0,
                     type=check_positive)
@@ -105,7 +116,7 @@ if __name__=="__main__":
     parser_b.add_argument("-g","--topp_games",type=check_positive, default=1)
     parser_b.add_argument("-mp","--model_path",type=str, required=False, default=None) 
     #parser_b.add_argument("-a","--agents",type=str, nargs='*' , required =True)
-    parser_b.add_argument("-r","--random",type=bool, default=False)
+    parser_b.add_argument("-r","--random",type=check_bool, default=False)
 
     parser_c = subparsers.add_parser("DATA") # Only store data.
     parser_d = subparsers.add_parser("FIX")
@@ -140,15 +151,20 @@ if __name__=="__main__":
 
     # ! NN-25  buffer_NN_25 -s 5000 (-200 pr storage) , Eps = 0.5 , 4 itt, batch 30 Adam nongreed
     # ! NN-25-20  buffer_nn_25 -s 5000 (-200 pr storage), eps = 0.5 , 20 its, batch 30 Adam Nongreed
-    # ! NN-25-20-WB  buffer_nn_25_WB -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 Adam Nongree ? TOPP kandidat.  O
+    # ! NN-25-20-WB  buffer_nn_25_WB -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 Adam Nongree ? TOPP kandidat.  O   T
     # ! NN-25-20-PB  buffer_nn-25-PB-RMSP -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 RMSP Nongreed
     # ! NN-25-20-PB-G  buffer_nn-25-PB-RMSP-G -s 5000 (-100 pr storage), eps = 0.5, 20 its, batch 30 RMSP greed 750 buffer
-    # ! NN-25-4-PG-G  buffer_NN-25-4-PG-G-RMSP -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 30 RMSP greed 750 buffer O
+    # ! NN-25-4-PG-G  buffer_NN-25-4-PG-G-RMSP -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 30 RMSP greed 750 buffer O   T
 
     # ! NN-25-4-PG-G-50  buffer_NN-25-4-PG-G-50 -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 50 RMSP greed 750 buffer lr 0.001  O
     # ! NN-25-2-PG-G-50  buffer_NN-25-2-PG-G-50 -s 5000 (-100 pr storage), eps = 0.5, 2 its, batch 50 RMSP greed 750 buffer lr 0.001  O
 
     # ! HEC-CNN-4-PG  buffer_HEX-CNN-5000.csv -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 50 Adam greed 750 buffer lr 0.001
+
+    # ! NN-25-20-WB-E2  buffer_nn_25_WB_E_25 -s 5000 (-200 pr storage), eps = 0.25, 20 its, batch 30 Adam Greed TOPP kandidat.  O   T
+
+    # ? TEST
+    # ! NN-25-5-d3  buffer_NN-25-5-d3.csv -s 3000 ( -200 pr storage)
 
     # ? LAPTOP
     # ! HEX-CNN  buffer_HEX_CNN  3k sim
@@ -156,7 +172,7 @@ if __name__=="__main__":
     # ! HEX-CNN-3  buffer_HEX_CNN_3 4k sim# pre-loaded + many itterations training.
     # ! HEX-CNN-4  buffer_HEX_CNN_4 # pre-loaded + only greedy after epsilon.
 
-    datamanager = Datamanager("Data/buffer_NN-25-4-PG-G-RMSP.csv",dim=args.dimentions,limit=750)
+    datamanager = Datamanager("Data/buffer_NN-25-5-d6.csv",dim=args.dimentions,limit=750)
     print(datamanager.filepath)
     if(game is not None):
         root = Node(game) # Init root node from game state.
@@ -165,7 +181,7 @@ if __name__=="__main__":
             
             #rollout_policy = network.HEX_CNN("HEX-CNN-2",args.dimentions) # Use default values
             #rollout_policy = network.HEX_CNN_L2("NN-50",args.dimentions) # Use default values
-            rollout_policy = network.HEX_CNN("HEC-CNN-4-PG",args.dimentions) # Use default values
+            rollout_policy = network.NN_25("NN-25-5-d6",dim=args.dimentions) # Use default values
             #rollout_policy = network.NN_50("NN-50-tanh-two",args.dimentions) # Use default values
             #rollout_policy = network.NN_50_norm("NN-50-norm", args.dimentions)
             #rollout_policy.apply(network.weights_init) # init weights and biases.
@@ -221,7 +237,7 @@ if __name__=="__main__":
                     print("Loading self from path \"{}\" at epoch {}".format(path, epoch))
             else:
                 print("Using random rollout only ----------- ")
-            mcts.play_batch_with_training(optimizer=optimizer,epoch=epoch,
+            mcts.play_batch_with_training(optimizer=optimizer,epoch=epoch,epsilon=args.epsilon,
             loss_function=loss_function,games=games,training_frequency=training_frequency, storage_frequency=storage_frequency, num_sims=args.num_sims,
             iterations=iterations,batch=batch,data_sims=init_sims,init_data_games=init_games, init_train=init_train)
         elif(args.sub_action == "TOPP"):
@@ -235,24 +251,13 @@ if __name__=="__main__":
                 models = []
                 for path in misc.find_models(model_path):
                     name = "v"+path.split("_")[-1] # vEpoch
-                    model = network.NN_50(name,args.dimentions, filepath=path)
+                    model = network.NN_25(name,args.dimentions, filepath=path)
                     models.append(model)
-                actor.tournament(game,models,games=topp_games)
+                actor.tournament(game,models,games=topp_games, random=args.random)
             else:
                 # manual innput
             #Model path should be same name as path..
                 #model = HEX_CNN("E-HEX-CNN",5)
-                
-                ## TODO: pass subfolder in top
-                #print(misc.find_models(model_path))
-                #actors = []
-                #for path in misc.find_models(model_path):
-                #    s_path = path.split("_") # get epoch name.
-                #    name = model_path + "-"+s_path[-1]
-                #    #name = "-".join(model_path) # Last index should be our name
-                #    actors.append(Actor.Actor(HEX_CNN(name=name,dim=5,filepath=path)))
-                    #models.append()
-                #print(actors)
     
                 model_1 = network.HEX_CNN(name="v1", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_1")
                 #print(model_1.parameters().data)
@@ -265,9 +270,6 @@ if __name__=="__main__":
                 models = [model_1,model_2,model_3,model_4]
                 #actors = [actor.Actor(model_1),actor.Actor(model_20),actor.Actor(model_50),actor.Actor(model_80),actor.Actor(model_120)]
                 actor.tournament(game,models,games=topp_games)
-                #model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
-                #Actor.tournament(game,games=100, 
-                #models=[model1], random=True)
             pass
         elif(args.sub_action == "DATA"):
             mcts.gather_data = True # need to specificly set this.

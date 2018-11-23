@@ -22,6 +22,7 @@ class Datamanager():
         self.filepath = filepath
         self.limit = limit
         self.dim = dim # dim of game we use
+        print("Datamanager uses dim", dim,"",filepath)
         if(not os.path.isfile(filepath)):  # * Create filepath, if it doest exist already.
             with open (filepath,"a") as file:
                 pass
@@ -115,7 +116,6 @@ class Datamanager():
 
         # Num, is the amount of data we send back.
         num = self.return_num(batch_size, tot_size)
-
         if(tot_size == 0):
             raise ValueError("No cases availible in file {}".format(self.filepath))
         # Randomly select num unique cases
@@ -123,18 +123,19 @@ class Datamanager():
         data_pid = []
         data_inputs = []
         data_targets = []
+
         for i, row in enumerate(data):
             data_pid.append(int(row[0])) 
             input = list(map(int,row[1:(self.dim*self.dim)+1])) # 1-> 25 should be board
-            target = list(map(float,row[(self.dim*self.dim)+1:]))
+            target = list(map(float,row[(self.dim*self.dim)+1:])) # 26-> rest is targets
             data_inputs.append(input)
             data_targets.append(target)
 
+
         # Depending on modus: 
         #        
-        t_inputs = self.__switcher.get(modus)(data_pid, data_inputs,self.dim) # Get inputs
+        t_inputs = self.__switcher.get(modus)(data_pid, data_inputs,dim=self.dim) # Get inputs
         t_targets = torch.from_numpy(np.array(data_targets)).float()
-
         return t_inputs, t_targets
 
     def return_keras(self):

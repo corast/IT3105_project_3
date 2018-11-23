@@ -177,10 +177,13 @@ def train_batch(casemanager:Datamanager, model, optimizer, loss_function, batch)
 
 def evaluate_test(casemanager:Datamanager, model, loss_function, batch_size):
     # batch_size = "all" is everything 
+    print(casemanager.dim, casemanager, "bs",batch_size)
     model.eval() # Change behaviour of some layers, like no dropout etc.
     with torch.no_grad(): # Turn off gradient calculation requirements, faster.
-        data,target = casemanager.return_batch(batch_size,model.input_type)
+        data, target = casemanager.return_batch(batch_size, model.input_type) # We might need to resize.
         prediction = model(data)
+        print(data.shape)
+        print(target.shape)
         return loss_function(prediction,target).item() # Get loss value.
 
 def save_checkpoint(state, filename="models/checkpoint.pth.tar"): #Save as .tar file
