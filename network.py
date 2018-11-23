@@ -79,7 +79,7 @@ class Model(nn.Sequential):
 
     def load_model(self, path, optimizer=None):
         if os.path.isfile(path): # check if is folder..
-            print(path)
+            print("loading from ", path)
             #model = model # TheModelClass(*args, **kwargs)
             optimizer = optimizer # TheOptimizerClass(*args, **kwargs)
             checkpoint = torch.load(path)
@@ -148,6 +148,7 @@ def train(model, casemanager_train:Datamanager, optimizer,
             #loss_test = evaluate(casemanager_test, model=model, loss_function=loss_function)
             loss_train_i = train_batch(casemanager_train, 
             model=model, optimizer=optimizer, loss_function=loss_function, batch=batch)
+
             loss_test_i = evaluate_test(casemanager_test, batch_size=batch*3,
             model=model, loss_function=loss_function)
             if(t % verbose == 0 or t == iterations + 1):
@@ -192,6 +193,10 @@ model.apply(weights_init) # initialize weights to random, with bias set to 0.
 optimizer = optim.Adam(model.parameters(),
                         lr=5e-4,betas=(0.9,0.999),eps=1e-08,weight_decay=1e-4)
 """
+
+###########################################
+# ********** NETWORKS USED ************** #
+###########################################
 #loss_function = nn.NLLLoss()
 #criterion = nn.CrossEntropyLoss()
 

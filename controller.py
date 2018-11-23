@@ -103,7 +103,7 @@ if __name__=="__main__":
     parser_b = subparsers.add_parser("TOPP") # TOPP tournament
 
     parser_b.add_argument("-g","--topp_games",type=check_positive, default=1)
-    parser_b.add_argument("-mp","--model_path",type=str, required=True)
+    parser_b.add_argument("-mp","--model_path",type=str, required=False, default=None) 
     #parser_b.add_argument("-a","--agents",type=str, nargs='*' , required =True)
     parser_b.add_argument("-r","--random",type=bool, default=False)
 
@@ -125,26 +125,25 @@ if __name__=="__main__":
     #time_limit = args.time_limit # get boolean if something set
     games = args.games
     
-    datamanager = Datamanager("Data/buffer_NN-25-4-PB-RMSP-G.csv",dim=args.dimentions,limit=750)
-    print(datamanager.filepath)
-    # ! HEX-CNN buffer_HEX_CNN Adam
-    # ! HEX-CNN-L2 buffer_HEX_CNN-L2 Adam
-
-    # ! HEX-CNN buffer_HEX_CNN Adam
-    # ! HEX-CNN-2 buffer_HEX_CNN_2 Adam
-
-    # ! NN-50-tanh-two buffer_NN_50_tanh_two 3000 sims Adam
-    # ! NN-50-tanh buffer_NN_50_tanh Adam nongreed
-    # ! NN-25 buffer_NN_25 -s 5000 Epsilon = 0.5 Adam nongree
     
-    # ! NN_50_norm buffer_NN_50_norm_tree.csv -s 5000 Epsilon = 0.5 Adam nongree
+    # ! HEX-CNN  buffer_HEX_CNN Adam
+    # ! HEX-CNN-L2  buffer_HEX_CNN-L2 Adam
 
-    # ! NN-25 buffer_NN_25 -s 5000 (-200 pr storage) , Eps = 0.5 , 4 itt, batch 30 Adam nongreed
-    # ! NN-25-20 buffer_nn_25 -s 5000 (-200 pr storage), eps = 0.5 , 20 its, batch 30 Adam Nongreed
-    # ! NN-25-20-WB buffer_nn_25_WB -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 Adam Nongree
-    # ! NN-25-20-PB buffer_nn-25-PB-RMSP -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 RMSP Nongreed
-    # ! NN-25-20-PB-G buffer_nn-25-PB-RMSP-G -s 5000 (-100 pr storage), eps = 0.5, 20 its, batch 30 RMSP greed 750 buffer
-    # ! NN-25-4-PG-G buffer_NN-25-4-PG-G-RMSP -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 30 RMSP greed 750 buffer
+    # ! HEX-CNN  buffer_HEX_CNN Adam
+    # ! HEX-CNN-2  buffer_HEX_CNN_2 Adam
+
+    # ! NN-50-tanh-two  buffer_NN_50_tanh_two 3000 sims Adam
+    # ! NN-50-tanh  buffer_NN_50_tanh Adam nongreed
+    # ! NN-25  buffer_NN_25 -s 5000 Epsilon = 0.5 Adam nongree
+    
+    # ! NN_50_norm  buffer_NN_50_norm_tree.csv -s 5000 Epsilon = 0.5 Adam nongree
+
+    # ! NN-25  buffer_NN_25 -s 5000 (-200 pr storage) , Eps = 0.5 , 4 itt, batch 30 Adam nongreed
+    # ! NN-25-20  buffer_nn_25 -s 5000 (-200 pr storage), eps = 0.5 , 20 its, batch 30 Adam Nongreed
+    # ! NN-25-20-WB  buffer_nn_25_WB -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 Adam Nongree ? TOPP kandidat.  O
+    # ! NN-25-20-PB  buffer_nn-25-PB-RMSP -s 5000 (-200 pr storage), eps = 0.5, 20 its, batch 30 RMSP Nongreed
+    # ! NN-25-20-PB-G  buffer_nn-25-PB-RMSP-G -s 5000 (-100 pr storage), eps = 0.5, 20 its, batch 30 RMSP greed 750 buffer
+    # ! NN-25-4-PG-G  buffer_NN-25-4-PG-G-RMSP -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 30 RMSP greed 750 buffer O
 
     
     # ! HEX-CNN buffer_HEX_CNN  3k sim
@@ -153,7 +152,20 @@ if __name__=="__main__":
     # ! HEX-CNN-4 buffer_HEX_CNN_4 # pre-loaded + only greedy after epsilon.
 
     # ? LAPTOP
-    # ! NN-50-PB-2-G  buffer_NN_50_2 Adam 0.0005, 300 games, -s 5000 -i 2 -b 32
+    # ! NN-50-PB-2-G  buffer_NN-50-PG-2-G Adam lr 0.0005, 300 games, -s 5000 -i 2 -b 32     O
+    # ! NN-25-4-PG-G-50  buffer_NN-25-4-PG-G-50 -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 50 RMSP greed 750 buffer lr 0.001  O
+    # ! NN-25-2-PG-G-50  buffer_NN-25-2-PG-G-50 -s 5000 (-100 pr storage), eps = 0.5, 2 its, batch 50 RMSP greed 750 buffer lr 0.001  O
+
+    # ! HEC-CNN-4-PG  buffer_HEX-CNN-5000.csv -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 50 Adam greed 750 buffer lr 0.001
+
+    # ? LAPTOP
+    # ! HEX-CNN  buffer_HEX_CNN  3k sim
+    # ! HEX-CNN-2  buffer_HEX_CNN_2 4k sim# pre-loaded
+    # ! HEX-CNN-3  buffer_HEX_CNN_3 4k sim# pre-loaded + many itterations training.
+    # ! HEX-CNN-4  buffer_HEX_CNN_4 # pre-loaded + only greedy after epsilon.
+
+    datamanager = Datamanager("Data/buffer_NN-50-PG-2-G.csv",dim=args.dimentions,limit=750)
+    print(datamanager.filepath)
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
@@ -161,7 +173,7 @@ if __name__=="__main__":
             
             #rollout_policy = network.HEX_CNN("HEX-CNN-2",args.dimentions) # Use default values
             #rollout_policy = network.HEX_CNN_L2("NN-50",args.dimentions) # Use default values
-            rollout_policy = network.NN_25("NN-25-4-PB-RMSP-G",args.dimentions) # Use default values
+            rollout_policy = network.HEX_CNN("HEC-CNN-4-PG",args.dimentions) # Use default values
             #rollout_policy = network.NN_50("NN-50-tanh-two",args.dimentions) # Use default values
             #rollout_policy = network.NN_50_norm("NN-50-norm", args.dimentions)
             #rollout_policy.apply(network.weights_init) # init weights and biases.
@@ -195,8 +207,8 @@ if __name__=="__main__":
             epoch = 0 # rollout_policy
             # * OPTIMIZERS
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
-            optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
-            #optimizer = optim.Adam(rollout_policy.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6)
+            #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.001,alpha=0.99,eps=1e-8)
+            optimizer = optim.Adam(rollout_policy.parameters(), lr=0.0005,betas=(0.9,0.999),eps=1e-6)
             #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 
             #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0)
             # * LOSS FUNCTIONS
@@ -223,40 +235,47 @@ if __name__=="__main__":
         elif(args.sub_action == "TOPP"):
             # Load models from file and start tournament between them.
             topp_games = args.topp_games
-            """
             model_path = args.model_path
-            #Model path should be same name as path..
-            model = HEX_CNN("E-HEX-CNN",5)
             print("TOPP", model_path, topp_games)
-            # TODO: pass subfolder in top
-            print(misc.find_models(model_path))
-            actors = []
-            for path in misc.find_models(model_path):
-                s_path = path.split("_") # get epoch name.
-                name = model_path + "-"+s_path[-1]
-                #name = "-".join(model_path) # Last index should be our name
-                actors.append(Actor.Actor(HEX_CNN(name=name,dim=5,filepath=path)))
-                #models.append()
-            print(actors)
-            """
-            model_1 = network.HEX_CNN(name="v1", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_1")
-            for params in model_1.parameters():
-                print(params.data)
-            #print(model_1.parameters().data)
-            model_2 = network.HEX_CNN(name="v50", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_50")
-            model_3 = network.HEX_CNN(name="v100", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_100")
-            model_4 = network.HEX_CNN(name="v140", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_140")
-            for params in model_4.parameters():
-                print(params.data)
-            #model_50 = network.HEX_CNN(name="HEX-CNN-POOL-50", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_50")
-            #model_80 = HEX_CNN_TWO(name="HEX-CNN-POOL-80", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_80")
-            #model_120 = HEX_CNN_TWO(name="HEX-CNN-POOL-120", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_120")
-            models = [model_1,model_2,model_3,model_4]
-            #actors = [actor.Actor(model_1),actor.Actor(model_20),actor.Actor(model_50),actor.Actor(model_80),actor.Actor(model_120)]
-            actor.tournament(game,models,games=topp_games)
-            #model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
-            #Actor.tournament(game,games=100, 
-            #models=[model1], random=True)
+            # ! Need to select which network the models use, otherwise we wont be able to load pw
+            #model = network.NN_25("NN-25-4-PB-RMSP-G",args.dimentions)
+            if(model_path is not None):
+                models = []
+                for path in misc.find_models(model_path):
+                    name = "v"+path.split("_")[-1] # vEpoch
+                    model = network.NN_50(name,args.dimentions, filepath=path)
+                    models.append(model)
+                actor.tournament(game,models,games=topp_games)
+            else:
+                # manual innput
+            #Model path should be same name as path..
+                #model = HEX_CNN("E-HEX-CNN",5)
+                
+                ## TODO: pass subfolder in top
+                #print(misc.find_models(model_path))
+                #actors = []
+                #for path in misc.find_models(model_path):
+                #    s_path = path.split("_") # get epoch name.
+                #    name = model_path + "-"+s_path[-1]
+                #    #name = "-".join(model_path) # Last index should be our name
+                #    actors.append(Actor.Actor(HEX_CNN(name=name,dim=5,filepath=path)))
+                    #models.append()
+                #print(actors)
+    
+                model_1 = network.HEX_CNN(name="v1", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_1")
+                #print(model_1.parameters().data)
+                model_2 = network.HEX_CNN(name="v50", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_50")
+                model_3 = network.HEX_CNN(name="v100", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_100")
+                model_4 = network.HEX_CNN(name="v140", dim=args.dimentions, filepath="models/HEX-CNN-2/HEX-CNN-2_140")
+                #model_50 = network.HEX_CNN(name="HEX-CNN-POOL-50", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_50")
+                #model_80 = HEX_CNN_TWO(name="HEX-CNN-POOL-80", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_80")
+                #model_120 = HEX_CNN_TWO(name="HEX-CNN-POOL-120", dim=args.dimentions, filepath="models/HEX-CNN-POOL/HEX-CNN-POOL_120")
+                models = [model_1,model_2,model_3,model_4]
+                #actors = [actor.Actor(model_1),actor.Actor(model_20),actor.Actor(model_50),actor.Actor(model_80),actor.Actor(model_120)]
+                actor.tournament(game,models,games=topp_games)
+                #model1 = network.Model(nn.Linear(52,80), nn.ReLU(), nn.Linear(80,25), nn.Softmax(dim=-1), name="rms_mod",filepath="models/rms_mod/rms_mod_10000")
+                #Actor.tournament(game,games=100, 
+                #models=[model1], random=True)
             pass
         elif(args.sub_action == "DATA"):
             mcts.gather_data = True # need to specificly set this.

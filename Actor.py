@@ -36,7 +36,7 @@ class Actor():
             elif(self.input_type == 2):
                 board_input = misc.get_cnn_input(pid,[board_state],dim)
             elif(self.input_type == 3):
-                board_input = misc.get_normal_2(pid, board_state)
+                board_input = misc.get_normal_2(pid, [board_state])
 
             if(type(board_input) == list):
                 #print("LIST IN GET_ACTION")
@@ -71,7 +71,7 @@ def tournament(game:Game, models=[], random=False, games=10): # We need to load 
     # round robin tournament.
     # Every play against every one else.
     #games = len(actors)*len(actors)
-
+    games_per = (len(actors)-1)*2 # How many games each actor play, we don't play against ourself, and as first and second
 
     perms = permutations(actors,2) 
     results = []
@@ -83,12 +83,24 @@ def tournament(game:Game, models=[], random=False, games=10): # We need to load 
             wins[result-1] += 1  # 1-1 = 0, 2-1 = 1
         results.append(wins)
     
-    print(results) 
     # TODO: create an matrix of the scores.
-
+    win_list = [0 for i in range(len(actors))] 
     print("  First        Second   Score")
     for i,(first,second) in enumerate(permutations(actors,2)):
         print("{:^10} vs {:^10} {:^2}:{:^2}".format(first.name, second.name, results[i][0],results[i][1] ))
+        # count the scores.
+        index_first = actors.index(first)
+        index_second = actors.index(second)
+        win_list[index_first] += results[i][0]
+        win_list[index_second] += results[i][1]
+    print("Listings")
+    for i,actor in enumerate(actors):
+        print("{:^10} won {:>3} of {:>3}".format(actor.name,win_list[i],games_per))
+
+
+    
+    
+
 
 
 def play_game(game:Game,first:Actor, second:Actor, input_type=1):

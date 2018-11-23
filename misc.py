@@ -1,6 +1,7 @@
 import numpy as np
 import torch
-
+import glob
+import os
 # Misc functions
 def int_to_one_hot_vector(value, size, off_val=0, on_val=1):
 # Size as 
@@ -87,8 +88,6 @@ def get_legal_states(board): # [1,0,0,1] 1's and 2's
 
 def find_newest_model(name):
     # Look for network with similar name with different ending. E.g. TESTNET_xxxx
-    import glob
-    import os
     # Find every file in directory of models with same name
     result = glob.glob("models/"+name+"/"+name+"*")
     if(len(result) == 0):
@@ -103,21 +102,11 @@ def find_newest_model(name):
         print("{} is not a regular file".format(path))
 
 def find_models(name):
-    import glob
-    import os
     # Find every file in directory of models with same name
     result = glob.glob("models/"+name+"/"+name+"*")
     if(len(result) == 0):
         return None
     return result
-    #result_2 =[x.split("_") for x in result]
-    # We need to use the second index to rank results.
-    #result_3 = max(result_2,key=lambda x:int(x[1]))
-    #path = "_".join(result_3)
-    #if(os.path.isfile("_".join(result_3))):
-    #    return path
-    #else:
-    #    print("{} is not a regular file".format(path))
 
 def get_player_states(board,dim,ravel=True): # Takes in an 5x5 array and outputs two 5x5 arrays with 1 where player played.
     if( type(board) == list): # Need to translate to np.array
