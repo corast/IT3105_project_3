@@ -156,6 +156,14 @@ if __name__=="__main__":
     # ! NN-25-20-PB-G  buffer_nn-25-PB-RMSP-G -s 5000 (-100 pr storage), eps = 0.5, 20 its, batch 30 RMSP greed 750 buffer
     # ! NN-25-4-PG-G  buffer_NN-25-4-PG-G-RMSP -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 30 RMSP greed 750 buffer O   T
 
+    
+    # ! HEX-CNN buffer_HEX_CNN  3k sim
+    # ! HEX-CNN-2 buffer_HEX_CNN_2 4k sim# pre-loaded
+    # ! HEX-CNN-3 buffer_HEX_CNN_3 4k sim# pre-loaded + many itterations training.
+    # ! HEX-CNN-4 buffer_HEX_CNN_4 # pre-loaded + only greedy after epsilon.
+
+    # ? LAPTOP
+    # ! NN-50-PB-2-G  buffer_NN-50-PG-2-G Adam lr 0.0005, 300 games, -s 5000 -i 2 -b 32     O
     # ! NN-25-4-PG-G-50  buffer_NN-25-4-PG-G-50 -s 5000 (-100 pr storage), eps = 0.5, 4 its, batch 50 RMSP greed 750 buffer lr 0.001  O
     # ! NN-25-2-PG-G-50  buffer_NN-25-2-PG-G-50 -s 5000 (-100 pr storage), eps = 0.5, 2 its, batch 50 RMSP greed 750 buffer lr 0.001  O
 
@@ -172,7 +180,11 @@ if __name__=="__main__":
     # ! HEX-CNN-3  buffer_HEX_CNN_3 4k sim# pre-loaded + many itterations training.
     # ! HEX-CNN-4  buffer_HEX_CNN_4 # pre-loaded + only greedy after epsilon.
 
+<<<<<<< HEAD
     datamanager = Datamanager("Data/buffer_NN-25-5-d6.csv",dim=args.dimentions,limit=750)
+=======
+    datamanager = Datamanager("Data/buffer_NN-50-PG-2-G.csv",dim=args.dimentions,limit=750)
+>>>>>>> 82ceeabc2d13af4f6a4a1ab2761e7b7efb386f2b
     print(datamanager.filepath)
     if(game is not None):
         root = Node(game) # Init root node from game state.
@@ -216,7 +228,7 @@ if __name__=="__main__":
             # * OPTIMIZERS
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.005,alpha=0.99,eps=1e-8)
             #optimizer = optim.RMSprop(rollout_policy.parameters(), lr=0.001,alpha=0.99,eps=1e-8)
-            optimizer = optim.Adam(rollout_policy.parameters(), lr=0.001,betas=(0.9,0.999),eps=1e-6)
+            optimizer = optim.Adam(rollout_policy.parameters(), lr=0.0005,betas=(0.9,0.999),eps=1e-6)
             #optimizer  = optim.SGD(model.parameters(), lr=0.01,momentum=0.2, dampening=0) 
             #optimizer = optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=0,weight_decay=0)
             # * LOSS FUNCTIONS
