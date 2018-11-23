@@ -151,6 +151,9 @@ if __name__=="__main__":
     # ! HEX-CNN-2 buffer_HEX_CNN_2 4k sim# pre-loaded
     # ! HEX-CNN-3 buffer_HEX_CNN_3 4k sim# pre-loaded + many itterations training.
     # ! HEX-CNN-4 buffer_HEX_CNN_4 # pre-loaded + only greedy after epsilon.
+
+    # ? LAPTOP
+    # ! NN-50-PB-2-G  buffer_NN_50_2 Adam 0.0005, 300 games, -s 5000 -i 2 -b 32
     if(game is not None):
         root = Node(game) # Init root node from game state.
         if(args.rollout == "ANET"):
